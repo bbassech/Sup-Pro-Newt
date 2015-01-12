@@ -449,9 +449,9 @@ void draw() {
       
       // Move the x-coordinate of the mouse 0-99
       if (rxheading[0] >= 0) {
-        
+        println(rxheading);
         //if (abs(rxheading[0] - old_rxheading) > controller_sensitivity_value) {
-        if (abs(rxheading[0] - old_rxheading) > 1) {
+        if (abs(rxheading[1] - old_rxheading) > 1) {
           
           new_x = (displayWidth * rxheading[0] / 100);
           
@@ -474,7 +474,6 @@ void draw() {
       } else {
           new_x = x;
         }
-        println(new_x);
         //new_x = x;
       } else {
         new_x = x;
@@ -495,12 +494,15 @@ void draw() {
       robot.mouseMove(new_x, new_y);
     }
   } else if (keyboard_mouse_toggle) {
+    println(heading);
     // Toggle the keys
     if (heading == 1) {
       robot.keyPress(KeyEvent.VK_RIGHT);
+      delay(5); //this is to provide more control when playing snowman game
       robot.keyRelease(KeyEvent.VK_RIGHT);
     } else if (heading == -1) {
       robot.keyPress(KeyEvent.VK_LEFT);
+      delay(5); // this is to provide more control when playing snowman game 
       robot.keyRelease(KeyEvent.VK_LEFT);
     } else {
       // Do nothing...
@@ -537,7 +539,7 @@ void keyReleased() {
     port.write("adcplay"); //Tells controller to collect data continuously
     port.bufferUntil('\n');
     port.write("\n");
-  } else {
+  } else if (key=='5') {
     j=0; //starts j over to be incremented with each iteration of serialEvent()
     mode=5;
     port.write("stop");
