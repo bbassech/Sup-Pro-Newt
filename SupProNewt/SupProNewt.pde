@@ -58,9 +58,10 @@ int old_rxheading = 0;  // Previous rxheading value...
 int x_window_limit = 1;
 int y_window_limit = 0;
 
-int myColor = color(255);
+int myColor = color(244,243,103);
 int c1, c2;
 float n, n1;
+int guiScale = 3; //adjusts size of GUI for different resolution screens
 
 // GUI
 ControlP5 cp5;
@@ -109,11 +110,6 @@ boolean port_selected = false;     // if a port has been chosen
 boolean port_setup = false;        // if a port has been set up
 
 void setup() {
-//  size(1000,400);
-//  background(255);
-//  size(800,600,P3D); //These are for drawing Cube
-//  smooth();
-//  fill(255,228,225); //initialize fill color to neutral color
   x_vals = new FloatList();
   y_vals = new FloatList();
   z_vals = new FloatList();
@@ -121,7 +117,7 @@ void setup() {
 //  port = new Serial(this, Serial.list()[0], 115200); //USE THIS IF NOT USING PORT SELECT DROPDOWN
   frameCount = 1; //enable use of delay()
 
-  size(400,500);
+  size(400*guiScale,500*guiScale);
   //frameRate(30);  // how often draw() gets called...
   
   // -------------------
@@ -132,35 +128,35 @@ void setup() {
   cp5 = new ControlP5(this);
   
   // Text label for heading status
-  t_heading_status = cp5.addTextlabel("heading_status", "", 10, 60); // 10, 160
+  t_heading_status = cp5.addTextlabel("heading_status", "", 10*guiScale, 60*guiScale); // 10, 160
   
   // Buttons to show status of command being received
   b_heading_left = cp5.addButton("left")
     .setValue(0)
-    .setPosition(240, 57) // 240, 157
-    .setSize(20, 20)
+    .setPosition(240*guiScale, 57*guiScale) // 240, 157
+    .setSize(20*guiScale, 20*guiScale)
     .setId(1);
   
   b_heading_stop = cp5.addButton("stop")
     .setValue(0)
-    .setPosition(270, 57) // 270, 157
-    .setSize(20, 20)
+    .setPosition(270*guiScale, 57*guiScale) // 270, 157
+    .setSize(20*guiScale, 20*guiScale)
     .setId(2);
   
   b_heading_right = cp5.addButton("right")
     .setValue(0)
-    .setPosition(300, 57) // 300, 157
-    .setSize(20, 20)
+    .setPosition(300*guiScale, 57*guiScale) // 300, 157
+    .setSize(20*guiScale, 20*guiScale)
     .setId(3);
   
   // Text label for emulator on/off
-  t_desc_emulator_on = cp5.addTextlabel("desc_emulator_on", "", 10, 100);
+  t_desc_emulator_on = cp5.addTextlabel("desc_emulator_on", "", 10*guiScale, 100*guiScale);
   
   // Button to start/stop toy controller emulation
   b_emulator_on = cp5.addButton("emulator_on")
     .setValue(0)
-    .setPosition(240, 92)
-    .setSize(50, 30)
+    .setPosition(240*guiScale, 92*guiScale)
+    .setSize(50*guiScale, 30*guiScale)
     .setId(0);
   
   // Text label for direction invert
@@ -184,39 +180,39 @@ void setup() {
 //    .setId(4);
   
   // Text label for emulator type
-  t_desc_emulator_type = cp5.addTextlabel("desc_emulator_type", "", 10, 220); // 10, 180
+  t_desc_emulator_type = cp5.addTextlabel("desc_emulator_type", "", 10*guiScale, 220*guiScale); // 10, 180
   
   // Button to toggle between keyboard and mouse emulation, 'keyboard_mouse'
   b_keyboard_mouse = cp5.addButton("keyboard_mouse")
     .setValue(0)
-    .setPosition(240, 212) // 240, 112
-    .setSize(100, 30)
+    .setPosition(240*guiScale, 212*guiScale) // 240, 112
+    .setSize(100*guiScale, 30*guiScale)
     .setId(4);
   
   // text labels for current mouse position
-  t_mouse_x = cp5.addTextlabel("mouse_x", "", 240, 252); // 212
-  t_mouse_x_value = cp5.addTextlabel("mouse_x_value", "", 265, 252);
-  t_mouse_y = cp5.addTextlabel("mouse_y", "", 240, 272);
-  t_mouse_y_value = cp5.addTextlabel("mouse_y_value", "", 265, 272);
+  t_mouse_x = cp5.addTextlabel("mouse_x", "", 240*guiScale, 252*guiScale); // 212
+  t_mouse_x_value = cp5.addTextlabel("mouse_x_value", "", 265*guiScale, 252*guiScale);
+  t_mouse_y = cp5.addTextlabel("mouse_y", "", 240*guiScale, 272*guiScale);
+  t_mouse_y_value = cp5.addTextlabel("mouse_y_value", "", 265*guiScale, 272*guiScale);
   
   // text label for x-min
-  t_desc_x_min = cp5.addTextlabel("desc_x_min", "", 10, 320); // 280
+  t_desc_x_min = cp5.addTextlabel("desc_x_min", "", 10*guiScale, 320*guiScale); // 280
   
   // text input for x-min
   t_in_x_min = cp5.addTextfield("in_x_min")
     .setValue(0)
-    .setPosition(240, 312)
-    .setSize(100, 30);
+    .setPosition(240*guiScale, 312*guiScale)
+    .setSize(100*guiScale, 30*guiScale);
   t_in_x_min.setInputFilter(ControlP5.INTEGER);
   
   // text label for x-max
-  t_desc_x_max = cp5.addTextlabel("desc_x_max", "", 10, 360); // 320
+  t_desc_x_max = cp5.addTextlabel("desc_x_max", "", 10*guiScale, 360*guiScale); // 320
   
   // text input for x-max
   t_in_x_max = cp5.addTextfield("in_x_max")
     .setValue(0)
-    .setPosition(240, 352)
-    .setSize(100, 30);
+    .setPosition(240*guiScale, 352*guiScale)
+    .setSize(100*guiScale, 30*guiScale);
   t_in_x_max.setInputFilter(ControlP5.INTEGER);
   
   
@@ -228,8 +224,8 @@ void setup() {
     .setMin(0)
     .setMax(10)
     .setValue(controller_sensitivity_value)
-    .setSize(140, 30)
-    .setPosition(240, 412) // 240, 212
+    .setSize(140*guiScale, 30*guiScale)
+    .setPosition(240*guiScale, 412*guiScale) // 240, 212
     .setNumberOfTickMarks(11);
     
   // Text label for speed
@@ -240,29 +236,29 @@ void setup() {
     .setMin(0)
     .setMax(10)
     .setValue(controller_speed_value)
-    .setSize(140, 30)
-    .setPosition(240, 452) // 240, 212
+    .setSize(140*guiScale, 30*guiScale)
+    .setPosition(240*guiScale, 452*guiScale) // 240, 212
     .setNumberOfTickMarks(11);   
 
 
   // --- this must be down here...
   
   // Text label for status of port  
-  t_port_status = cp5.addTextlabel("port_status","",10,35);
+  t_port_status = cp5.addTextlabel("port_status","",10*guiScale,35*guiScale);
   
   // DropdownList to display the values
   //ports = cp5.addDropdownList("ports-list",10,30,180,84);
   ddl_ports = cp5.addDropdownList("dropdownlist_ports")
-    .setPosition(10,30)
-    .setWidth(380)
-    .setHeight(140);
+    .setPosition(10*guiScale,30*guiScale)
+    .setWidth(380*guiScale)
+    .setHeight(140*guiScale);
   
   // This function can be used to refresh the COM ports in the list
   customize_dropdownlist(ddl_ports);
   
   
-  PFont pfont = createFont("Arial", 24, false);
-  ControlFont font = new ControlFont(pfont, 12);
+  PFont pfont = createFont("Arial", 24*guiScale, false);
+  ControlFont font = new ControlFont(pfont, 12*guiScale);
   cp5.setControlFont(font);
   
 
@@ -379,7 +375,7 @@ void setup() {
 }
 
 void draw() {
-  background(255);
+  background(myColor);
 //  int[] rxheading = {0, 0}; //Defined globally instead
   int heading = 0;
   
@@ -497,14 +493,14 @@ void draw() {
     println(heading);
     // Toggle the keys
     if (heading == 1) {
-      robot.keyPress(KeyEvent.VK_RIGHT);
-      delay(5); //this is to provide more control when playing snowman game
-      robot.keyRelease(KeyEvent.VK_RIGHT);
-    } else if (heading == -1) {
-      robot.keyPress(KeyEvent.VK_LEFT);
-      delay(5); // this is to provide more control when playing snowman game 
       robot.keyRelease(KeyEvent.VK_LEFT);
+      robot.keyPress(KeyEvent.VK_RIGHT);
+    } else if (heading == -1) {
+      robot.keyRelease(KeyEvent.VK_RIGHT);
+      robot.keyPress(KeyEvent.VK_LEFT);
     } else {
+      robot.keyRelease(KeyEvent.VK_LEFT);
+      robot.keyRelease(KeyEvent.VK_RIGHT);
       // Do nothing...
       ;
     }
@@ -786,8 +782,8 @@ void customize_dropdownlist(DropdownList ddl)
 {
   //
   ddl.setBackgroundColor(color(200));
-  ddl.setItemHeight(20);
-  ddl.setBarHeight(20);
+  ddl.setItemHeight(20*guiScale);
+  ddl.setBarHeight(20*guiScale);
   ddl.captionLabel().set("Select COM port");
   ddl.captionLabel().style().marginTop = 3;
   ddl.captionLabel().style().marginLeft = 3;
