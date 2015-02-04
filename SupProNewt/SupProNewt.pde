@@ -68,18 +68,26 @@ ControlP5 cp5;
 DropdownList ddl_ports;             // available serial ports as a DropdownList
 //controlP5.Button b_comm_type;
 controlP5.Button b_emulator_on;
-//controlP5.Button b_direction_invert;
+controlP5.Button b_controlmode; //Button for switching control mode
 controlP5.Button b_keyboard_mouse;
 controlP5.Button b_heading_left;
 controlP5.Button b_heading_stop;
 controlP5.Button b_heading_right;
+controlP5.Button b_collect_left;
+controlP5.Button b_collect_right;
 
 controlP5.Textlabel t_port_status;
 controlP5.Textlabel t_heading_status;
-controlP5.Textlabel t_desc_emulator_on;
-//controlP5.Textlabel t_desc_direction_invert;
+controlP5.Textlabel t_desc_emulator_on; //Emulator on or off
+controlP5.Textlabel t_desc_controlmode; //Control mode text label
+controlP5.Textlabel t_desc_thresholds; //Text label for thresholds section
+controlP5.Textlabel t_desc_left_thresh; //Text label for left thresh
+controlP5.Textlabel t_desc_right_thresh; //Text label for right thresh
 //controlP5.Textlabel t_desc_comm_type;
-controlP5.Textlabel t_desc_emulator_type;
+controlP5.Textlabel t_desc_emulator_type; //Mouse or Keyboard
+
+controlP5.Textlabel thresholds;
+
 controlP5.Textlabel t_mouse_x;
 controlP5.Textlabel t_mouse_x_value;
 controlP5.Textlabel t_mouse_y;
@@ -87,6 +95,9 @@ controlP5.Textlabel t_mouse_y_value;
 controlP5.Textlabel t_desc_x_min;
 controlP5.Textlabel t_desc_x_max;
 
+
+controlP5.Textfield t_left_thresh;
+controlP5.Textfield t_right_thresh;
 controlP5.Textfield t_in_x_min;
 controlP5.Textfield t_in_x_max;
 
@@ -96,6 +107,7 @@ controlP5.Textfield t_in_x_max;
 // these variables will all get toggled when they are called to update the button text...
 // so fill them with the opposite of the desired value
 boolean emulator_on_toggle = true;        // 0 = off, 1 = on
+boolean controlmode_toggle = true; //0 = wrist, 1 = forearm
 //boolean direction_invert_toggle = true;   // 0 = regular, 1 = inverted
 //boolean comm_type_toggle = false;         // 0 = RC, 1 = dongle
 boolean keyboard_mouse_toggle = true;     // 0 = mouse, 1 = keyboard
@@ -159,16 +171,46 @@ void setup() {
     .setSize(50*guiScale, 30*guiScale)
     .setId(0);
   
-  // Text label for direction invert
-//  t_desc_direction_invert = cp5.addTextlabel("desc_direction_invert", "", 10, 140);
+  // Text label for control mode
+  t_desc_controlmode = cp5.addTextlabel("desc_controlmode", "",10*guiScale, 140*guiScale);
+
+  // Button to switch control mode
+  b_controlmode = cp5.addButton("controlmode")
+  .setValue(0)
+  .setPosition(240*guiScale, 132*guiScale)
+  .setSize(80*guiScale, 30*guiScale)
+  .setId(0);
   
-  //
-//  b_direction_invert = cp5.addButton("direction_invert")
-//    .setValue(0)
-//    .setPosition(240, 132)
-//    .setSize(100, 30)
-//    .setId(0);
+  // Text label for Thresholds
+  t_desc_thresholds = cp5.addTextlabel("t_desc_thresholds","",10*guiScale,180*guiScale); 
+    // Text label for left and right thresholds
+    t_desc_left_thresh = cp5.addTextlabel("t_desc_left_thresh","",20*guiScale, 200*guiScale);
+    t_desc_right_thresh = cp5.addTextlabel("t_desc_right_thresh","",20*guiScale, 230*guiScale);  
   
+  // Text input for thresholds
+  t_left_thresh = cp5.addTextfield("  ")
+    .setValue(45)
+    .setPosition(240*guiScale, 200*guiScale)
+    .setSize(60*guiScale, 20*guiScale);
+  t_left_thresh.setInputFilter(ControlP5.INTEGER);  
+  t_right_thresh = cp5.addTextfield("   ")
+    .setValue(-45)
+    .setPosition(240*guiScale, 230*guiScale)
+    .setSize(60*guiScale, 20*guiScale);
+  t_right_thresh.setInputFilter(ControlP5.INTEGER); 
+  
+  // Button collection for thresholds  
+  b_collect_left = cp5.addButton("collect_left")
+  .setValue(0)
+  .setPosition(360*guiScale, 200*guiScale)
+  .setSize(20*guiScale, 20*guiScale)
+  .setId(0);
+  b_collect_right = cp5.addButton("collect_right")
+  .setValue(0)
+  .setPosition(360*guiScale, 230*guiScale)
+  .setSize(20*guiScale, 20*guiScale)
+  .setId(0);
+
   // Text label for communication type
 //  t_desc_comm_type = cp5.addTextlabel("desc_comm_type", "", 10, 180); // 10, 140
   
@@ -180,38 +222,38 @@ void setup() {
 //    .setId(4);
   
   // Text label for emulator type
-  t_desc_emulator_type = cp5.addTextlabel("desc_emulator_type", "", 10*guiScale, 220*guiScale); // 10, 180
+  t_desc_emulator_type = cp5.addTextlabel("desc_emulator_type", "", 10*guiScale, 360*guiScale); // 10, 180
   
   // Button to toggle between keyboard and mouse emulation, 'keyboard_mouse'
   b_keyboard_mouse = cp5.addButton("keyboard_mouse")
     .setValue(0)
-    .setPosition(240*guiScale, 212*guiScale) // 240, 112
+    .setPosition(240*guiScale, 352*guiScale) // 240, 112
     .setSize(100*guiScale, 30*guiScale)
     .setId(4);
   
   // text labels for current mouse position
-  t_mouse_x = cp5.addTextlabel("mouse_x", "", 240*guiScale, 252*guiScale); // 212
-  t_mouse_x_value = cp5.addTextlabel("mouse_x_value", "", 265*guiScale, 252*guiScale);
-  t_mouse_y = cp5.addTextlabel("mouse_y", "", 240*guiScale, 272*guiScale);
-  t_mouse_y_value = cp5.addTextlabel("mouse_y_value", "", 265*guiScale, 272*guiScale);
+  t_mouse_x = cp5.addTextlabel("mouse_x", "", 240*guiScale, 390*guiScale); // 212
+  t_mouse_x_value = cp5.addTextlabel("mouse_x_value", "", 265*guiScale, 390*guiScale);
+  t_mouse_y = cp5.addTextlabel("mouse_y", "", 240*guiScale, 410*guiScale);
+  t_mouse_y_value = cp5.addTextlabel("mouse_y_value", "", 265*guiScale, 410*guiScale);
   
   // text label for x-min
-  t_desc_x_min = cp5.addTextlabel("desc_x_min", "", 10*guiScale, 320*guiScale); // 280
+  t_desc_x_min = cp5.addTextlabel("desc_x_min", "", 10*guiScale, 440*guiScale); // 280
   
   // text input for x-min
-  t_in_x_min = cp5.addTextfield("in_x_min")
+  t_in_x_min = cp5.addTextfield("")
     .setValue(0)
-    .setPosition(240*guiScale, 312*guiScale)
+    .setPosition(240*guiScale, 432*guiScale)
     .setSize(100*guiScale, 30*guiScale);
   t_in_x_min.setInputFilter(ControlP5.INTEGER);
   
   // text label for x-max
-  t_desc_x_max = cp5.addTextlabel("desc_x_max", "", 10*guiScale, 360*guiScale); // 320
+  t_desc_x_max = cp5.addTextlabel("desc_x_max", "", 10*guiScale, 480*guiScale); // 320
   
   // text input for x-max
-  t_in_x_max = cp5.addTextfield("in_x_max")
+  t_in_x_max = cp5.addTextfield(" ")
     .setValue(0)
-    .setPosition(240*guiScale, 352*guiScale)
+    .setPosition(240*guiScale, 472*guiScale)
     .setSize(100*guiScale, 30*guiScale);
   t_in_x_max.setInputFilter(ControlP5.INTEGER);
   
@@ -220,25 +262,25 @@ void setup() {
 //  t_desc_sensitivity = cp5.addTextlabel("desc_sensitivity","", 10, 420); // 10, 220
   
   // Slider to toggle mouse responsiveness
-  cp5.addSlider("controller_sensitivity")
-    .setMin(0)
-    .setMax(10)
-    .setValue(controller_sensitivity_value)
-    .setSize(140*guiScale, 30*guiScale)
-    .setPosition(240*guiScale, 412*guiScale) // 240, 212
-    .setNumberOfTickMarks(11);
+//  cp5.addSlider("controller_sensitivity")
+//    .setMin(0)
+//    .setMax(10)
+//    .setValue(controller_sensitivity_value)
+//    .setSize(140*guiScale, 30*guiScale)
+//    .setPosition(240*guiScale, 412*guiScale) // 240, 212
+//    .setNumberOfTickMarks(11);
     
   // Text label for speed
 //  t_desc_speed = cp5.addTextlabel("desc_speed","", 10, 460); // 10, 220
   
   // Slider to toggle mouse responsiveness
-  cp5.addSlider("controller_speed")
-    .setMin(0)
-    .setMax(10)
-    .setValue(controller_speed_value)
-    .setSize(140*guiScale, 30*guiScale)
-    .setPosition(240*guiScale, 452*guiScale) // 240, 212
-    .setNumberOfTickMarks(11);   
+//  cp5.addSlider("controller_speed")
+//    .setMin(0)
+//    .setMax(10)
+//    .setValue(controller_speed_value)
+//    .setSize(140*guiScale, 30*guiScale)
+//    .setPosition(240*guiScale, 452*guiScale) // 240, 212
+//    .setNumberOfTickMarks(11);   
 
 
   // --- this must be down here...
@@ -275,8 +317,21 @@ void setup() {
   t_desc_emulator_on.setColorValue(0xFF0303);
   t_desc_emulator_on.setValue("Toggle emulator ON/OFF");
   
-//  t_desc_direction_invert.setColorValue(0xFF0303);
-//  t_desc_direction_invert.setValue("Invert direction?");
+  t_desc_controlmode.setColorValue(0xFF0303);
+  t_desc_controlmode.setValue("Control Mode");
+  
+  t_desc_thresholds.setColorValue(0xFF0303);
+  t_desc_thresholds.setValue("Thresholds: ");
+  
+  t_desc_left_thresh.setColorValue(0xFF0303);
+  t_desc_left_thresh.setValue("Left (CCW):");  
+  t_desc_right_thresh.setColorValue(0xFF0303);
+  t_desc_right_thresh.setValue("Right (CW):");
+  
+  t_left_thresh.setValue("45"); //Initiates thresholds to display 45 and -45
+  t_right_thresh.setValue("-45");
+  
+  
   
   t_desc_emulator_type.setColorValue(0xFF0303);
   t_desc_emulator_type.setValue("Toggle emulator Keyboard/Mouse");
@@ -314,10 +369,16 @@ void setup() {
   
   cp5.getController("emulator_on")
     .getCaptionLabel();
+    
+  cp5.getController("controlmode")
+    .getCaptionLabel();
   
-//  cp5.getController("direction_invert")
-//    .getCaptionLabel();
-  
+  cp5.getController("collect_left")
+    .getCaptionLabel();
+  cp5.getController("collect_right")
+    .getCaptionLabel();
+    
+    
   //b_comm_type.captionLabel()
   //  .setText("Dongle");
   
@@ -483,8 +544,11 @@ void draw() {
       // Keep the y-coordinate the same
       new_y = y;
       
-      t_mouse_x_value.setValue(""+new_x);
-      t_mouse_y_value.setValue(""+new_y);
+      t_mouse_x_value.setValue(""+mouseX/guiScale); //THIS IS a DEV tool for locating positions in GUI
+      t_mouse_y_value.setValue(""+mouseY/guiScale);
+      
+      //t_mouse_x_value.setValue(""+new_x);
+      //t_mouse_y_value.setValue(""+new_y);
       
       // This is a little choppy...
       robot.mouseMove(new_x, new_y);
@@ -507,41 +571,38 @@ void draw() {
   }
   
 }
-void keyReleased() {
-    if (key =='1') {
-    mode=1;
+void mouseReleased() {
+delay(1000); //This one second delay is to allow the mode to change in response to GUI button presses
+  if (mode==1) {
     j=0; //starts j over to be incremented with each iteration of serialEvent()
     port.write("adcaccel 10 100");
     port.bufferUntil('\n'); 
     port.write("\n");
     println("Neutral Samples (y):");
-  } else if (key == '2') {
-    mode=2;
+  } else if (mode==2) {
     j=0; //starts j over to be incremented with each iteration of serialEvent()
     port.write("adcaccel 10 100");
     port.bufferUntil('\n'); 
     port.write("\n");
     println("Pronation Samples (y):");
-  } else if (key == '3') {
-    mode=3;
+  } else if (mode==3) {
     j=0; //starts j over to be incremented with each iteration of serialEvent()
     port.write("adcaccel 10 100");
     port.bufferUntil('\n'); 
     port.write("\n");
     println("Supination Samples (y):");
-  } else if (key == '4') { //Starts "continuous" collection of acceleration data
+  } else if (mode==4) { //Starts "continuous" collection of acceleration data
     j=0;
-    mode = 4; //Tells serialEvent we are in collectDynamic() mode
     port.write("adcplay"); //Tells controller to collect data continuously
     port.bufferUntil('\n');
     port.write("\n");
-  } else if (key=='5') {
+  } else if (mode==5) {
     j=0; //starts j over to be incremented with each iteration of serialEvent()
-    mode=5;
     port.write("stop");
     port.bufferUntil('\n'); 
     port.write("\n");
   }
+  mode=0; //Resets the mode to zero so that extraneous mouse clicks don't cause cause port writes
 }
 
 void collectDynamic() {
@@ -551,6 +612,10 @@ void collectDynamic() {
   float xAcc=0; //x acceleration in g's
   float yAcc=0; //y acceleration in g's 
   float zAcc=0; //z acceleration in g's
+  
+//Gets thresholds from text entry fields
+proRoll = Integer.parseInt(t_left_thresh.getText()); 
+supRoll = Integer.parseInt(t_right_thresh.getText());
 
     x1=x_vals.get(i-1);
     y1=y_vals.get(i-1);
@@ -561,8 +626,8 @@ void collectDynamic() {
 
 //Calculation of roll and pitch angle (4 options using    
 //  //Aerospace rotation sequence
-    roll=atan(yAcc/zAcc); //Approximation of roll angle in radians based on aerospace rotation sequence
-    pitch=atan(-xAcc/sqrt(pow(yAcc,2)+pow(zAcc,2)));
+    roll=180/PI*(atan(yAcc/zAcc)); //Approximation of roll angle in radians based on aerospace rotation sequence
+    pitch=180/PI*(atan(-xAcc/sqrt(pow(yAcc,2)+pow(zAcc,2))));
 //  //Aerospace rotation sequence (corrected)
 //    roll=atan(yAcc/(zAcc/abs(zAcc)*sqrt(pow(zAcc,2)+.01*pow(xAcc,2)))); //Approximation of roll angle in radians based on aerospace rotation sequence
 //    pitch=atan(-xAcc/sqrt(pow(yAcc,2)+pow(zAcc,2))); //Approximation of roll angle in radians
@@ -573,8 +638,9 @@ void collectDynamic() {
 //    pitch=atan(-xAcc/(zAcc/abs(zAcc)*sqrt(pow(zAcc,2)+.01*pow(yAcc,2)))); //Approximation of roll angle in radians based on aerospace rotation sequence
 //    roll=atan(yAcc/sqrt(pow(xAcc,2)+pow(zAcc,2))); //Approximation of roll angle in radians
     
-//println(pitch*180/PI); //prints pitch angle in degrees
-//println(roll*180/PI); //prints roll (supination/pronation) angle in degrees
+//println(pitch); //prints pitch angle in degrees
+//println(roll); //prints roll (supination/pronation) angle in degrees
+
 
 //Check current roll angle against thresholds
     if ((roll < proRoll || roll>supRoll) && yAcc<0) { //This OR statement is simply to adress the fact the pronation past 90degrees should still count.  yAcc<0 excludes actual supination
@@ -634,9 +700,9 @@ void serialEvent (Serial myPort) {
             float[] proAvg={Descriptive.mean(proSamplesX), Descriptive.mean(proSamplesY), Descriptive.mean(proSamplesZ)};
             float[] proAcc={(proAvg[0]-xZero)*Scale, (proAvg[1]-yZero)*Scale, (proAvg[2]-zZero)*Scale};
 //            proRoll=atan(proAcc[1]/(proAcc[2]/abs(proAcc[2])*sqrt(pow(proAcc[2],2)+.01*pow(proAcc[0],2)))); //Approximation of roll angle in radians based on corrected aerospace rotation sequence
-            proRoll=atan(proAcc[1]/proAcc[2]); //uncorrected aerospace rotation sequence
+            proRoll=180/PI*(atan(proAcc[1]/proAcc[2])); //uncorrected aerospace rotation sequence
 //            proRoll=atan(proAcc[1]/sqrt(pow(proAcc[0],2)+pow(proAcc[2],2)));
-            println(proRoll*180/PI);
+            println(proRoll);
           }
           j=j+1;
         } else if (mode==3) {
@@ -647,9 +713,9 @@ void serialEvent (Serial myPort) {
             float[] supAvg={Descriptive.mean(supSamplesX), Descriptive.mean(supSamplesY), Descriptive.mean(supSamplesZ)};
             float[] supAcc={(supAvg[0]-xZero)*Scale, (supAvg[1]-yZero)*Scale, (supAvg[2]-zZero)*Scale};
 //            supRoll=atan(supAcc[1]/(supAcc[2]/abs(supAcc[2])*sqrt(pow(supAcc[2],2)+.01*pow(supAcc[0],2)))); //Approximation of roll angle in radians based on aerospace rotation sequence
-            supRoll=atan(supAcc[1]/supAcc[2]); //uncorrected aerospace
+            supRoll=180/PI*(atan(supAcc[1]/supAcc[2])); //uncorrected aerospace
 //            supRoll=atan(supAcc[1]/sqrt(pow(supAcc[0],2)+pow(supAcc[2],2)));
-            println(supRoll*180/PI);
+            println(supRoll);
           }
           j=j+1;
         } else if (mode==4) {
@@ -719,21 +785,24 @@ public void emulator_on(int theValue)
   emulator_on_toggle = !emulator_on_toggle;
   cp5.controller("emulator_on").setCaptionLabel((emulator_on_toggle == true) ? "ON":"OFF");
   //println("on ?:" + emulator_on_toggle);
-  if (emulator_on_toggle)
-  {
+  if (emulator_on_toggle)  {
     // The emulator is turned ON, send a keystroke to the serial port in case data has paused...
     port.write(13);
+    mode=4; //starts collectDynamic()
+  }
+  if (!emulator_on_toggle) {
+    mode=5; //stops collectDynamic()
   }
 }
 
-///* Function direction_invert */
-//public void direction_invert(int theValue)
-//{
-////  direction_invert_toggle = !direction_invert_toggle;
-//  cp5.controller("direction_invert").setCaptionLabel((direction_invert_toggle == true) ? "INVERT":"NORMAL");
-//  //println("dongle ?:" + comm_type_toggle);
-//}
-//
+/* Function controlmode */
+public void controlmode(int theValue)
+{
+  controlmode_toggle = !controlmode_toggle;
+  cp5.controller("controlmode").setCaptionLabel((controlmode_toggle==true) ? "FOREARM":"WRIST");
+}
+
+
 ///* Function comm_type */
 //public void comm_type(int theValue)
 //{
@@ -742,6 +811,29 @@ public void emulator_on(int theValue)
 //  //println("dongle ?:" + comm_type_toggle);
 //}
 
+/* Function manual_left_thresh */
+public void manual_left_thresh(float theValue)
+{
+  t_left_thresh.setValue("" + theValue);
+}
+
+/* Fuction manual_right_thresh */
+public void manual_right_thresh(float theValue)
+{
+  t_right_thresh.setValue("" + theValue);
+}
+
+/* Function collect_left */
+public void collect_left(int theValue)
+{
+  mode=2;
+}
+
+/* Function collect_right */
+public void collect_right(int theValue)
+{
+  mode=3; //
+}
 
 /* Function keyboard_mouse */
 public void keyboard_mouse(int theValue)
