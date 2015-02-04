@@ -75,6 +75,7 @@ controlP5.Button b_heading_stop;
 controlP5.Button b_heading_right;
 controlP5.Button b_collect_left;
 controlP5.Button b_collect_right;
+controlP5.Button b_collect_neutral;
 
 controlP5.Textlabel t_port_status;
 controlP5.Textlabel t_heading_status;
@@ -83,6 +84,7 @@ controlP5.Textlabel t_desc_controlmode; //Control mode text label
 controlP5.Textlabel t_desc_thresholds; //Text label for thresholds section
 controlP5.Textlabel t_desc_left_thresh; //Text label for left thresh
 controlP5.Textlabel t_desc_right_thresh; //Text label for right thresh
+controlP5.Textlabel t_desc_neutral; //Text label for neutral
 //controlP5.Textlabel t_desc_comm_type;
 controlP5.Textlabel t_desc_emulator_type; //Mouse or Keyboard
 
@@ -98,6 +100,7 @@ controlP5.Textlabel t_desc_x_max;
 
 controlP5.Textfield t_left_thresh;
 controlP5.Textfield t_right_thresh;
+controlP5.Textfield t_neutral;
 controlP5.Textfield t_in_x_min;
 controlP5.Textfield t_in_x_max;
 
@@ -186,6 +189,7 @@ void setup() {
     // Text label for left and right thresholds
     t_desc_left_thresh = cp5.addTextlabel("t_desc_left_thresh","",20*guiScale, 200*guiScale);
     t_desc_right_thresh = cp5.addTextlabel("t_desc_right_thresh","",20*guiScale, 230*guiScale);  
+    t_desc_neutral = cp5.addTextlabel("t_desc_neutral","",20*guiScale, 260*guiScale);
   
   // Text input for thresholds
   t_left_thresh = cp5.addTextfield("  ")
@@ -198,18 +202,28 @@ void setup() {
     .setPosition(240*guiScale, 230*guiScale)
     .setSize(60*guiScale, 20*guiScale);
   t_right_thresh.setInputFilter(ControlP5.INTEGER); 
+  t_neutral = cp5.addTextfield("    ")
+    .setValue(0)
+    .setPosition(240*guiScale, 260*guiScale)
+    .setSize(60*guiScale,20*guiScale);
+  t_neutral.setInputFilter(controlP5.INTEGER);
   
   // Button collection for thresholds  
   b_collect_left = cp5.addButton("collect_left")
-  .setValue(0)
-  .setPosition(360*guiScale, 200*guiScale)
-  .setSize(20*guiScale, 20*guiScale)
-  .setId(0);
+    .setValue(0)
+    .setPosition(360*guiScale, 200*guiScale)
+    .setSize(20*guiScale, 20*guiScale)
+    .setId(0);
   b_collect_right = cp5.addButton("collect_right")
-  .setValue(0)
-  .setPosition(360*guiScale, 230*guiScale)
-  .setSize(20*guiScale, 20*guiScale)
-  .setId(0);
+    .setValue(0)
+    .setPosition(360*guiScale, 230*guiScale)
+    .setSize(20*guiScale, 20*guiScale)
+    .setId(0);
+  b_collect_neutral = cp5.addButton("collect_neutral")
+    .setValue(0)
+    .setPosition(360*guiScale, 260*guiScale)
+    .setSize(20*guiScale,20*guiScale)
+    setId(0);
 
   // Text label for communication type
 //  t_desc_comm_type = cp5.addTextlabel("desc_comm_type", "", 10, 180); // 10, 140
@@ -327,9 +341,13 @@ void setup() {
   t_desc_left_thresh.setValue("Left (CCW):");  
   t_desc_right_thresh.setColorValue(0xFF0303);
   t_desc_right_thresh.setValue("Right (CW):");
+  t_desc_neutral.setColorValue(0xFF0303);
+  t_desc_neutral.setValue("Neutral:");
+  
   
   t_left_thresh.setValue("45"); //Initiates thresholds to display 45 and -45
   t_right_thresh.setValue("-45");
+  t_neutral.setValue("0"); //Initiates neutral to display 0
   
   
   
@@ -376,6 +394,8 @@ void setup() {
   cp5.getController("collect_left")
     .getCaptionLabel();
   cp5.getController("collect_right")
+    .getCaptionLabel();
+  cp5.getController("collect_neutral")
     .getCaptionLabel();
     
     
@@ -571,39 +591,39 @@ void draw() {
   }
   
 }
-void mouseReleased() {
-delay(1000); //This one second delay is to allow the mode to change in response to GUI button presses
-  if (mode==1) {
-    j=0; //starts j over to be incremented with each iteration of serialEvent()
-    port.write("adcaccel 10 100");
-    port.bufferUntil('\n'); 
-    port.write("\n");
-    println("Neutral Samples (y):");
-  } else if (mode==2) {
-    j=0; //starts j over to be incremented with each iteration of serialEvent()
-    port.write("adcaccel 10 100");
-    port.bufferUntil('\n'); 
-    port.write("\n");
-    println("Pronation Samples (y):");
-  } else if (mode==3) {
-    j=0; //starts j over to be incremented with each iteration of serialEvent()
-    port.write("adcaccel 10 100");
-    port.bufferUntil('\n'); 
-    port.write("\n");
-    println("Supination Samples (y):");
-  } else if (mode==4) { //Starts "continuous" collection of acceleration data
-    j=0;
-    port.write("adcplay"); //Tells controller to collect data continuously
-    port.bufferUntil('\n');
-    port.write("\n");
-  } else if (mode==5) {
-    j=0; //starts j over to be incremented with each iteration of serialEvent()
-    port.write("stop");
-    port.bufferUntil('\n'); 
-    port.write("\n");
-  }
-  mode=0; //Resets the mode to zero so that extraneous mouse clicks don't cause cause port writes
-}
+//void mouseReleased() {
+//delay(1000); //This one second delay is to allow the mode to change in response to GUI button presses
+//  if (mode==1) {
+//    j=0; //starts j over to be incremented with each iteration of serialEvent()
+//    port.write("adcaccel 10 100");
+//    port.bufferUntil('\n'); 
+//    port.write("\n");
+//    println("Neutral Samples (y):");
+//  } else if (mode==2) {
+//    j=0; //starts j over to be incremented with each iteration of serialEvent()
+//    port.write("adcaccel 10 100");
+//    port.bufferUntil('\n'); 
+//    port.write("\n");
+//    println("Pronation Samples (y):");
+//  } else if (mode==3) {
+//    j=0; //starts j over to be incremented with each iteration of serialEvent()
+//    port.write("adcaccel 10 100");
+//    port.bufferUntil('\n'); 
+//    port.write("\n");
+//    println("Supination Samples (y):");
+//  } else if (mode==4) { //Starts "continuous" collection of acceleration data
+//    j=0;
+//    port.write("adcplay"); //Tells controller to collect data continuously
+//    port.bufferUntil('\n');
+//    port.write("\n");
+//  } else if (mode==5) {
+//    j=0; //starts j over to be incremented with each iteration of serialEvent()
+//    port.write("stop");
+//    port.bufferUntil('\n'); 
+//    port.write("\n");
+//  }
+//  mode=0; //Resets the mode to zero so that extraneous mouse clicks don't cause cause port writes
+//}
 
 void collectDynamic() {
   float x1 = 0;
@@ -788,10 +808,18 @@ public void emulator_on(int theValue)
   if (emulator_on_toggle)  {
     // The emulator is turned ON, send a keystroke to the serial port in case data has paused...
     port.write(13);
-    mode=4; //starts collectDynamic()
+    mode=4;
+    j=0;
+    port.write("adcplay"); //Tells controller to collect data continuously
+    port.bufferUntil('\n');
+    port.write("\n");
   }
   if (!emulator_on_toggle) {
     mode=5; //stops collectDynamic()
+    j=0; //starts j over to be incremented with each iteration of serialEvent()
+    port.write("stop");
+    port.bufferUntil('\n'); 
+    port.write("\n");
   }
 }
 
@@ -827,13 +855,35 @@ public void manual_right_thresh(float theValue)
 public void collect_left(int theValue)
 {
   mode=2;
+  j=0; //starts j over to be incremented with each iteration of serialEvent()
+  port.write("adcaccel 10 100");
+  port.bufferUntil('\n'); 
+  port.write("\n");
+  println("Pronation Samples (y):");
 }
 
 /* Function collect_right */
 public void collect_right(int theValue)
 {
   mode=3; //
+  j=0; //starts j over to be incremented with each iteration of serialEvent()
+  port.write("adcaccel 10 100");
+  port.bufferUntil('\n'); 
+  port.write("\n");
+  println("Supination Samples (y):");
 }
+
+/* Function collect_neutral */
+public void collect_neutral(int theValue)
+{
+  mode=1; //
+  j=0; //starts j over to be incremented with each iteration of serialEvent()
+  port.write("adcaccel 10 100");
+  port.bufferUntil('\n'); 
+  port.write("\n");
+  println("Neutral Samples (y):");
+}
+
 
 /* Function keyboard_mouse */
 public void keyboard_mouse(int theValue)
