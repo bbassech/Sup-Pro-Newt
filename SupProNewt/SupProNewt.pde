@@ -193,12 +193,12 @@ void setup() {
   
   // Text input for thresholds
   t_left_thresh = cp5.addTextfield("  ")
-    .setValue(45)
+    .setValue(-45)
     .setPosition(240*guiScale, 200*guiScale)
     .setSize(60*guiScale, 20*guiScale);
   t_left_thresh.setInputFilter(ControlP5.INTEGER);  
   t_right_thresh = cp5.addTextfield("   ")
-    .setValue(-45)
+    .setValue(45)
     .setPosition(240*guiScale, 230*guiScale)
     .setSize(60*guiScale, 20*guiScale);
   t_right_thresh.setInputFilter(ControlP5.INTEGER); 
@@ -206,7 +206,7 @@ void setup() {
     .setValue(0)
     .setPosition(240*guiScale, 260*guiScale)
     .setSize(60*guiScale,20*guiScale);
-  t_neutral.setInputFilter(controlP5.INTEGER);
+  t_neutral.setInputFilter(ControlP5.INTEGER);
   
   // Button collection for thresholds  
   b_collect_left = cp5.addButton("collect_left")
@@ -223,7 +223,7 @@ void setup() {
     .setValue(0)
     .setPosition(360*guiScale, 260*guiScale)
     .setSize(20*guiScale,20*guiScale)
-    setId(0);
+    .setId(0);
 
   // Text label for communication type
 //  t_desc_comm_type = cp5.addTextlabel("desc_comm_type", "", 10, 180); // 10, 140
@@ -345,8 +345,8 @@ void setup() {
   t_desc_neutral.setValue("Neutral:");
   
   
-  t_left_thresh.setValue("45"); //Initiates thresholds to display 45 and -45
-  t_right_thresh.setValue("-45");
+  t_left_thresh.setValue("-45"); //Initiates thresholds to display 45 and -45
+  t_right_thresh.setValue("45");
   t_neutral.setValue("0"); //Initiates neutral to display 0
   
   
@@ -526,7 +526,7 @@ void draw() {
       
       // Move the x-coordinate of the mouse 0-99
       if (rxheading[0] >= 0) {
-        println(rxheading);
+        //println(rxheading);
         //if (abs(rxheading[0] - old_rxheading) > controller_sensitivity_value) {
         if (abs(rxheading[1] - old_rxheading) > 1) {
           
@@ -574,7 +574,7 @@ void draw() {
       robot.mouseMove(new_x, new_y);
     }
   } else if (keyboard_mouse_toggle) {
-    println(heading);
+  //  println(heading);
     // Toggle the keys
     if (heading == 1) {
       robot.keyRelease(KeyEvent.VK_LEFT);
@@ -591,6 +591,7 @@ void draw() {
   }
   
 }
+    
 //void mouseReleased() {
 //delay(1000); //This one second delay is to allow the mode to change in response to GUI button presses
 //  if (mode==1) {
@@ -634,8 +635,11 @@ void collectDynamic() {
   float zAcc=0; //z acceleration in g's
   
 //Gets thresholds from text entry fields
-proRoll = Integer.parseInt(t_left_thresh.getText()); 
-supRoll = Integer.parseInt(t_right_thresh.getText());
+println(t_left_thresh.getText());
+proRoll = float(t_left_thresh.getText()); 
+supRoll = float(t_right_thresh.getText());
+//println(proRoll);
+//println(supRoll);
 
     x1=x_vals.get(i-1);
     y1=y_vals.get(i-1);
@@ -707,9 +711,11 @@ void serialEvent (Serial myPort) {
             float[] neutralAvg={Descriptive.mean(neutralX), Descriptive.mean(neutralY), Descriptive.mean(neutralZ)};
             float[] neutralAcc={(neutralAvg[0]-xZero)*Scale, (neutralAvg[1]-yZero)*Scale, (neutralAvg[2]-zZero)*Scale};
 //            neutralRoll=atan(neutralAcc[1]/(neutralAcc[2]/abs(neutralAcc[2])*sqrt(pow(neutralAcc[2],2)+.01*pow(neutralAcc[0],2)))); //Approximation of roll angle in radians based on corrected aerospace rotation sequence
-            neutralRoll=atan(neutralAcc[1]/neutralAcc[2]); //uncorrected aerospace 
+            neutralRoll=round(180/PI*(atan(neutralAcc[1]/neutralAcc[2]))); //uncorrected aerospace 
 //            neutralRoll=atan(neutralAcc[1]/sqrt(pow(neutralAcc[0],2)+pow(neutralAcc[2],2))); //Approximation of roll angle in radians based on aerospace rotation sequence 
-            println(neutralRoll*180/PI);
+            t_neutral.setValue(str(neutralRoll));
+            println(neutralRoll);
+            
           }
           j=j+1;
         } else if (mode==2) {
@@ -720,8 +726,9 @@ void serialEvent (Serial myPort) {
             float[] proAvg={Descriptive.mean(proSamplesX), Descriptive.mean(proSamplesY), Descriptive.mean(proSamplesZ)};
             float[] proAcc={(proAvg[0]-xZero)*Scale, (proAvg[1]-yZero)*Scale, (proAvg[2]-zZero)*Scale};
 //            proRoll=atan(proAcc[1]/(proAcc[2]/abs(proAcc[2])*sqrt(pow(proAcc[2],2)+.01*pow(proAcc[0],2)))); //Approximation of roll angle in radians based on corrected aerospace rotation sequence
-            proRoll=180/PI*(atan(proAcc[1]/proAcc[2])); //uncorrected aerospace rotation sequence
+            proRoll=round(180/PI*(atan(proAcc[1]/proAcc[2]))); //uncorrected aerospace rotation sequence
 //            proRoll=atan(proAcc[1]/sqrt(pow(proAcc[0],2)+pow(proAcc[2],2)));
+            t_left_thresh.setValue(str(proRoll));
             println(proRoll);
           }
           j=j+1;
@@ -733,8 +740,9 @@ void serialEvent (Serial myPort) {
             float[] supAvg={Descriptive.mean(supSamplesX), Descriptive.mean(supSamplesY), Descriptive.mean(supSamplesZ)};
             float[] supAcc={(supAvg[0]-xZero)*Scale, (supAvg[1]-yZero)*Scale, (supAvg[2]-zZero)*Scale};
 //            supRoll=atan(supAcc[1]/(supAcc[2]/abs(supAcc[2])*sqrt(pow(supAcc[2],2)+.01*pow(supAcc[0],2)))); //Approximation of roll angle in radians based on aerospace rotation sequence
-            supRoll=180/PI*(atan(supAcc[1]/supAcc[2])); //uncorrected aerospace
+            supRoll=round(180/PI*(atan(supAcc[1]/supAcc[2]))); //uncorrected aerospace
 //            supRoll=atan(supAcc[1]/sqrt(pow(supAcc[0],2)+pow(supAcc[2],2)));
+            t_right_thresh.setValue(str(supRoll));
             println(supRoll);
           }
           j=j+1;
@@ -803,6 +811,7 @@ public void controlEvent(ControlEvent theEvent)
 public void emulator_on(int theValue)
 {
   emulator_on_toggle = !emulator_on_toggle;
+  println(emulator_on_toggle);
   cp5.controller("emulator_on").setCaptionLabel((emulator_on_toggle == true) ? "ON":"OFF");
   //println("on ?:" + emulator_on_toggle);
   if (emulator_on_toggle)  {
@@ -813,6 +822,7 @@ public void emulator_on(int theValue)
     port.write("adcplay"); //Tells controller to collect data continuously
     port.bufferUntil('\n');
     port.write("\n");
+    println("test");
   }
   if (!emulator_on_toggle) {
     mode=5; //stops collectDynamic()
