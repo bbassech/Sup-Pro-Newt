@@ -529,16 +529,12 @@ void draw() {
         //println(rxheading);
         //if (abs(rxheading[0] - old_rxheading) > controller_sensitivity_value) {
         if (abs(rxheading[1] - old_rxheading) > 1) {
-          
-          new_x = (displayWidth * rxheading[0] / 100);
-          
-          //println("" + cp5.getController("in_x_min").getValue());
-          
-          //if (new_x < (int) cp5.getController("in_x_min").getText()) {
-          //  new_x = (int) cp5.getController("in_x_min").getText();
-          //} else if (new_x > (int) cp5.getController("in_x_max").getText()) {
-          //  new_x = (int) cp5.getController("in_x_max").getText();
-          //}
+          if (rxheading[1]==6) {
+            new_x = x - 10;
+          } else if (rxheading[1]==3) {
+            new_x = x + 10;
+          }
+
           
           if (new_x < Integer.parseInt(t_in_x_min.getText())) {
             new_x = Integer.parseInt(t_in_x_min.getText());
@@ -635,7 +631,6 @@ void collectDynamic() {
   float zAcc=0; //z acceleration in g's
   
 //Gets thresholds from text entry fields
-println(t_left_thresh.getText());
 proRoll = float(t_left_thresh.getText()); 
 supRoll = float(t_right_thresh.getText());
 //println(proRoll);
