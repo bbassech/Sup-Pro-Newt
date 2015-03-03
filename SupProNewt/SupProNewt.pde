@@ -16,7 +16,7 @@ Robot robot; //Create object from Robot class
 
 int i = 0;  //This is an incrementing counter that increments everytime something is read from serialEvent
 int mode = 0; //This variable is changed when keys are pressed and used by serialEvent() to check what to do with incoming data
-int j = 0; //This is an incrementer used for populated arrays with a fixed number of samples (neutralY, proSamplesY, etc)
+int j = 0; //This is an incrementer used for populated arrays with a fixed number of samples (neutralY, leftSamplesY, etc)
 
 //Declare variables for calculating rotation angles and visualizing on cube
 float xZero=1640; //center value of x channel. Determined with controller resting "housing down" on a table
@@ -24,15 +24,16 @@ float yZero=2010; //center value of y channel
 float zZero=2050; // center value of z channel
 float Scale=1/300.0; //sensitivity (g/mV) of accelerometer
 
-float roll=0; //initialize variable for roll angle
+float signal=0; //initialize variable for signal angle
 float pitch=0; //initialize variable for pitch angle
-float neutralRoll=0; //variable for the roll angle of neutral postion
-float proRoll=0; //variable for the roll angle of pronation threshold
-float supRoll=0; //variable for the roll angle of supination threshold
+float neutralSignal=0; //variable for the angle of neutral postion
+float leftThresh=0; //variable for the angle of the left threshold
+float rightThresh=0; //variable for the angle of the right threshold
 int[] rxheading = {0, 0}; //Used for telling GUI and Emulator when threshold has been reached
 
 //Initialize float lists for all acceleration channels. Values will be appended 
 //to these lists everytime a non null string is written to the port
+FloatList pot_vals;
 FloatList x_vals;
 FloatList y_vals;
 FloatList z_vals;
@@ -41,12 +42,12 @@ FloatList z_vals;
 float[] neutralX = new float[10]; //used to collect 10 x values for neutral...
 float[] neutralY = new float[10];
 float[] neutralZ = new float[10];
-float[] proSamplesX = new float[10]; //Used to store 10 x values for pronation to average for a threshold
-float[] proSamplesY = new float[10]; //Used to store 10 y values for pronation to average for a threshold
-float[] proSamplesZ = new float[10]; //Used to store 10 z values for pronation to average for a threshold
-float[] supSamplesX = new float[10]; //Used to store 10 x values for supinaton to average for a threshold
-float[] supSamplesY = new float[10]; //Used to store 10 y values for supinaton to average for a threshold
-float[] supSamplesZ = new float[10]; //Used to store 10 y values for supinaton to average for a threshold
+float[] leftSamplesX = new float[10]; //Used to store 10 x values for left position to average for a threshold
+float[] leftSamplesY = new float[10]; //Used to store 10 y values for left position to average for a threshold
+float[] leftSamplesZ = new float[10]; //Used to store 10 z values for left position to average for a threshold
+float[] rightSamplesX = new float[10]; //Used to store 10 x values for right position to average for a threshold
+float[] rightSamplesY = new float[10]; //Used to store 10 y values for right position to average for a threshold
+float[] rightSamplesZ = new float[10]; //Used to store 10 y values for right position to average for a threshold
 
 // For Mouse control
 int x = 0;     // Mouse pointer position
@@ -110,7 +111,7 @@ controlP5.Textfield t_in_x_max;
 // these variables will all get toggled when they are called to update the button text...
 // so fill them with the opposite of the desired value
 boolean emulator_on_toggle = true;        // 0 = off, 1 = on
-boolean controlmode_toggle = true; //0 = wrist, 1 = forearm
+boolean controlmode_toggle = false; //0 = wrist, 1 = forearm
 //boolean direction_invert_toggle = true;   // 0 = regular, 1 = inverted
 //boolean comm_type_toggle = false;         // 0 = RC, 1 = dongle
 boolean keyboard_mouse_toggle = true;     // 0 = mouse, 1 = keyboard
@@ -125,6 +126,7 @@ boolean port_selected = false;     // if a port has been chosen
 boolean port_setup = false;        // if a port has been set up
 
 void setup() {
+  pot_vals = new FloatList();
   x_vals = new FloatList();
   y_vals = new FloatList();
   z_vals = new FloatList();
@@ -623,51 +625,20 @@ void draw() {
 //}
 
 void collectDynamic() {
-  float x1 = 0;
-  float y1 = 0;
-  float z1 = 0;
-  float xAcc=0; //x acceleration in g's
-  float yAcc=0; //y acceleration in g's 
-  float zAcc=0; //z acceleration in g's
-  
-//Gets thresholds from text entry fields
-proRoll = float(t_left_thresh.getText()); 
-supRoll = float(t_right_thresh.getText());
-//println(proRoll);
-//println(supRoll);
-
-    x1=x_vals.get(i-1);
-    y1=y_vals.get(i-1);
-    z1=z_vals.get(i-1);
-    xAcc=(x1-xZero)*Scale; //Converts voltage to acceleration in g's
-    yAcc=(y1-yZero)*Scale; //Converts voltage to acceleration in g's
-    zAcc=(z1-zZero)*Scale; //Converts voltage to acceleration in g's
-
-//Calculation of roll and pitch angle (4 options using    
-//  //Aerospace rotation sequence
-    roll=180/PI*(atan(yAcc/zAcc)); //Approximation of roll angle in radians based on aerospace rotation sequence
-    pitch=180/PI*(atan(-xAcc/sqrt(pow(yAcc,2)+pow(zAcc,2))));
-//  //Aerospace rotation sequence (corrected)
-//    roll=atan(yAcc/(zAcc/abs(zAcc)*sqrt(pow(zAcc,2)+.01*pow(xAcc,2)))); //Approximation of roll angle in radians based on aerospace rotation sequence
-//    pitch=atan(-xAcc/sqrt(pow(yAcc,2)+pow(zAcc,2))); //Approximation of roll angle in radians
-//  //Non-Aerospace rotation sequence    
-//    roll=atan(yAcc/sqrt(pow(xAcc,2)+pow(zAcc,2))); //Approximation of roll angle in radians based on aerospace rotation sequence
-//    pitch=atan(-xAcc/zAcc); 
-//  //Non-Aerospace rotation sequence (corrected)
-//    pitch=atan(-xAcc/(zAcc/abs(zAcc)*sqrt(pow(zAcc,2)+.01*pow(yAcc,2)))); //Approximation of roll angle in radians based on aerospace rotation sequence
-//    roll=atan(yAcc/sqrt(pow(xAcc,2)+pow(zAcc,2))); //Approximation of roll angle in radians
+  if (!controlmode_toggle) {//if we are in wrist mode
+    float pot1 = 0;
     
-//println(pitch); //prints pitch angle in degrees
-//println(roll); //prints roll (supination/pronation) angle in degrees
-
-
-//Check current roll angle against thresholds
-    if ((roll < proRoll || roll>supRoll) && yAcc<0) { //This OR statement is simply to adress the fact the pronation past 90degrees should still count.  yAcc<0 excludes actual supination
-      //println("Pronated");
+    leftThresh = float(t_left_thresh.getText()); //CONSIDER CHANGING leftThresh to leftRoll
+    rightThresh = float(t_right_thresh.getText());
+    pot1=pot_vals.get(i-1);
+    signal = (pot1*0.089433+29.72776)-180; //calculates flexion/extension angle
+    println(signal);
+    if (signal < leftThresh) { //may need OR statement to address the fact the pronation past 90degrees should still count.  yAcc<0 excludes actual supination
+      //println("flexed");
       //fill(255,0,0);
       rxheading[1] = 6; // CURRENTLY CORRESPONDS to RIGHT HEADER
-    } else if (roll > supRoll && zAcc>0) {
-      //println("Supinated");
+    } else if (signal > rightThresh) {
+      //println("extended");
       //fill(0,0,255);
       rxheading[1] = 3; // CURRENTLY CORRESPONDS TO LEFT HEADER
     } else {
@@ -675,70 +646,153 @@ supRoll = float(t_right_thresh.getText());
       //fill(255,228,225);
       rxheading[1] = 0; // CURRENTLY CORRESPONDS TO LEFT HEADER
     }
-
+  
+  } else { //if we are in forearm mode
+      
+        float x1 = 0;
+        float y1 = 0;
+        float z1 = 0;
+        float xAcc=0; //x acceleration in g's
+        float yAcc=0; //y acceleration in g's 
+        float zAcc=0; //z acceleration in g's
+        
+      //Gets thresholds from text entry fields
+      leftThresh = float(t_left_thresh.getText()); 
+      rightThresh = float(t_right_thresh.getText());
+      //println(leftThresh);
+      //println(rightThresh);
+      
+          x1=x_vals.get(i-1);
+          y1=y_vals.get(i-1);
+          z1=z_vals.get(i-1);
+          xAcc=(x1-xZero)*Scale; //Converts voltage to acceleration in g's
+          yAcc=(y1-yZero)*Scale; //Converts voltage to acceleration in g's
+          zAcc=(z1-zZero)*Scale; //Converts voltage to acceleration in g's
+      
+      //Calculation of signal and pitch angle (4 options using    
+      //  //Aerospace rotation sequence
+          signal=180/PI*(atan(yAcc/zAcc)); //Approximation of signal angle in radians based on aerospace rotation sequence
+          pitch=180/PI*(atan(-xAcc/sqrt(pow(yAcc,2)+pow(zAcc,2))));
+      //  //Aerospace rotation sequence (corrected)
+      //    signal=atan(yAcc/(zAcc/abs(zAcc)*sqrt(pow(zAcc,2)+.01*pow(xAcc,2)))); //Approximation of signal angle in radians based on aerospace rotation sequence
+      //    pitch=atan(-xAcc/sqrt(pow(yAcc,2)+pow(zAcc,2))); //Approximation of signal angle in radians
+      //  //Non-Aerospace rotation sequence    
+      //    signal=atan(yAcc/sqrt(pow(xAcc,2)+pow(zAcc,2))); //Approximation of signal angle in radians based on aerospace rotation sequence
+      //    pitch=atan(-xAcc/zAcc); 
+      //  //Non-Aerospace rotation sequence (corrected)
+      //    pitch=atan(-xAcc/(zAcc/abs(zAcc)*sqrt(pow(zAcc,2)+.01*pow(yAcc,2)))); //Approximation of signal angle in radians based on aerospace rotation sequence
+      //    signal=atan(yAcc/sqrt(pow(xAcc,2)+pow(zAcc,2))); //Approximation of signal angle in radians
+          
+      //println(pitch); //prints pitch angle in degrees
+      //println(signal); //prints signal (supination/pronation or flexion/extensionsignal) angle in degrees
+  
+  
+  //Check current signal angle against thresholds
+      if ((signal < leftThresh || signal>rightThresh) && yAcc<0) { //This OR statement is simply to adress the fact the pronation past 90degrees should still count.  yAcc<0 excludes actual supination
+        //println("Pronated");
+        //fill(255,0,0);
+        rxheading[1] = 6; // CURRENTLY CORRESPONDS to RIGHT HEADER
+      } else if (signal > rightThresh && zAcc>0) {
+        //println("Supinated");
+        //fill(0,0,255);
+        rxheading[1] = 3; // CURRENTLY CORRESPONDS TO LEFT HEADER
+      } else {
+        //println("neutral");
+        //fill(255,228,225);
+        rxheading[1] = 0; // CURRENTLY CORRESPONDS TO LEFT HEADER
+      }
+  }
 }
 
 void serialEvent (Serial myPort) {
+  
+  
   // Read string until carriage return and save as accelString
   String accelString = myPort.readStringUntil('\n'); //defines accelString as a single line of output from the terminal
+
 //Parsing
   if (accelString != null) {
     try {
       float[] accelVals = float(split(accelString, ',')); //splits line based on comma delimiter
 //      println(accelVals);
+//      println(mode);
+//      println(controlmode_toggle); 
       if (!Float.isNaN(accelVals[0])) { //If a value for the acceleration was output 
         if (mode==4) { //If we are using adcplay
+          pot_vals.append(accelVals[0]);
           x_vals.append(accelVals[1]);
           y_vals.append(accelVals[2]);
           z_vals.append(accelVals[3]);
+          println(pot_vals);
         } else {
-          x_vals.append(accelVals[0]);
-          y_vals.append(accelVals[1]);
-          z_vals.append(accelVals[2]);
+          if (!controlmode_toggle) {
+            pot_vals.append(accelVals[0]);
+          } else {
+            x_vals.append(accelVals[0]);
+            y_vals.append(accelVals[1]);
+            z_vals.append(accelVals[2]);
+          }
         }
           
         i = i + 1;   //Increments list index if actual acceleration values were appended
         if (mode==1) {
-          neutralX[j]=x_vals.get(i-1);
-          neutralY[j]=y_vals.get(i-1);
-          neutralZ[j]=z_vals.get(i-1);
-          if (j==9) { //if all 10 samples have been collected
-            float[] neutralAvg={Descriptive.mean(neutralX), Descriptive.mean(neutralY), Descriptive.mean(neutralZ)};
-            float[] neutralAcc={(neutralAvg[0]-xZero)*Scale, (neutralAvg[1]-yZero)*Scale, (neutralAvg[2]-zZero)*Scale};
-//            neutralRoll=atan(neutralAcc[1]/(neutralAcc[2]/abs(neutralAcc[2])*sqrt(pow(neutralAcc[2],2)+.01*pow(neutralAcc[0],2)))); //Approximation of roll angle in radians based on corrected aerospace rotation sequence
-            neutralRoll=round(180/PI*(atan(neutralAcc[1]/neutralAcc[2]))); //uncorrected aerospace 
-//            neutralRoll=atan(neutralAcc[1]/sqrt(pow(neutralAcc[0],2)+pow(neutralAcc[2],2))); //Approximation of roll angle in radians based on aerospace rotation sequence 
-            t_neutral.setValue(str(neutralRoll));
-            println(neutralRoll);
-            
+          if (!controlmode_toggle) {
+            neutralSignal=round((pot_vals.get(i-1)*0.089433+29.72776)-180);
+            println(neutralSignal);
+            t_neutral.setValue(str(neutralSignal));
+          } else {
+            neutralX[j]=x_vals.get(i-1);
+            neutralY[j]=y_vals.get(i-1);
+            neutralZ[j]=z_vals.get(i-1);
+            if (j==9) { //if all 10 samples have been collected
+              float[] neutralAvg={Descriptive.mean(neutralX), Descriptive.mean(neutralY), Descriptive.mean(neutralZ)};
+              float[] neutralAcc={(neutralAvg[0]-xZero)*Scale, (neutralAvg[1]-yZero)*Scale, (neutralAvg[2]-zZero)*Scale};
+  //            neutralSignal=atan(neutralAcc[1]/(neutralAcc[2]/abs(neutralAcc[2])*sqrt(pow(neutralAcc[2],2)+.01*pow(neutralAcc[0],2)))); //Approximation of signal angle in radians based on corrected aerospace rotation sequence
+              neutralSignal=round(180/PI*(atan(neutralAcc[1]/neutralAcc[2]))); //uncorrected aerospace 
+  //            neutralSignal=atan(neutralAcc[1]/sqrt(pow(neutralAcc[0],2)+pow(neutralAcc[2],2))); //Approximation of signal angle in radians based on aerospace rotation sequence 
+              t_neutral.setValue(str(neutralSignal));
+              println(neutralSignal);
+            } 
           }
           j=j+1;
         } else if (mode==2) {
-          proSamplesX[j]=x_vals.get(i-1);
-          proSamplesY[j]=y_vals.get(i-1);
-          proSamplesZ[j]=z_vals.get(i-1);
-          if (j==9) { //if all 10 samples have been collected
-            float[] proAvg={Descriptive.mean(proSamplesX), Descriptive.mean(proSamplesY), Descriptive.mean(proSamplesZ)};
-            float[] proAcc={(proAvg[0]-xZero)*Scale, (proAvg[1]-yZero)*Scale, (proAvg[2]-zZero)*Scale};
-//            proRoll=atan(proAcc[1]/(proAcc[2]/abs(proAcc[2])*sqrt(pow(proAcc[2],2)+.01*pow(proAcc[0],2)))); //Approximation of roll angle in radians based on corrected aerospace rotation sequence
-            proRoll=round(180/PI*(atan(proAcc[1]/proAcc[2]))); //uncorrected aerospace rotation sequence
-//            proRoll=atan(proAcc[1]/sqrt(pow(proAcc[0],2)+pow(proAcc[2],2)));
-            t_left_thresh.setValue(str(proRoll));
-            println(proRoll);
+          if (!controlmode_toggle) {
+            leftThresh=round((pot_vals.get(i-1)*0.089433+29.72776)-180);
+            println(leftThresh);
+            t_left_thresh.setValue(str(leftThresh));
+          } else {
+            leftSamplesX[j]=x_vals.get(i-1);
+            leftSamplesY[j]=y_vals.get(i-1);
+            leftSamplesZ[j]=z_vals.get(i-1);
+            if (j==9) { //if all 10 samples have been collected
+              float[] proAvg={Descriptive.mean(leftSamplesX), Descriptive.mean(leftSamplesY), Descriptive.mean(leftSamplesZ)};
+              float[] proAcc={(proAvg[0]-xZero)*Scale, (proAvg[1]-yZero)*Scale, (proAvg[2]-zZero)*Scale};
+  //            leftThresh=atan(proAcc[1]/(proAcc[2]/abs(proAcc[2])*sqrt(pow(proAcc[2],2)+.01*pow(proAcc[0],2)))); //Approximation of signal angle in radians based on corrected aerospace rotation sequence
+              leftThresh=round(180/PI*(atan(proAcc[1]/proAcc[2]))); //uncorrected aerospace rotation sequence
+  //            leftThresh=atan(proAcc[1]/sqrt(pow(proAcc[0],2)+pow(proAcc[2],2)));
+              t_left_thresh.setValue(str(leftThresh));
+              println(leftThresh);
+            }
           }
           j=j+1;
         } else if (mode==3) {
-          supSamplesX[j]=x_vals.get(i-1);
-          supSamplesY[j]=y_vals.get(i-1);
-          supSamplesZ[j]=z_vals.get(i-1);
-          if (j==9) { //if all 10 samples have been collected
-            float[] supAvg={Descriptive.mean(supSamplesX), Descriptive.mean(supSamplesY), Descriptive.mean(supSamplesZ)};
-            float[] supAcc={(supAvg[0]-xZero)*Scale, (supAvg[1]-yZero)*Scale, (supAvg[2]-zZero)*Scale};
-//            supRoll=atan(supAcc[1]/(supAcc[2]/abs(supAcc[2])*sqrt(pow(supAcc[2],2)+.01*pow(supAcc[0],2)))); //Approximation of roll angle in radians based on aerospace rotation sequence
-            supRoll=round(180/PI*(atan(supAcc[1]/supAcc[2]))); //uncorrected aerospace
-//            supRoll=atan(supAcc[1]/sqrt(pow(supAcc[0],2)+pow(supAcc[2],2)));
-            t_right_thresh.setValue(str(supRoll));
-            println(supRoll);
+          if (!controlmode_toggle) {
+            rightThresh=round((pot_vals.get(i-1)*0.089433+29.72776)-180);
+            println(rightThresh);
+            t_right_thresh.setValue(str(rightThresh));
+          } else {
+            rightSamplesX[j]=x_vals.get(i-1);
+            rightSamplesY[j]=y_vals.get(i-1);
+            rightSamplesZ[j]=z_vals.get(i-1);
+            if (j==9) { //if all 10 samples have been collected
+              float[] supAvg={Descriptive.mean(rightSamplesX), Descriptive.mean(rightSamplesY), Descriptive.mean(rightSamplesZ)};
+              float[] supAcc={(supAvg[0]-xZero)*Scale, (supAvg[1]-yZero)*Scale, (supAvg[2]-zZero)*Scale};
+  //            rightThresh=atan(supAcc[1]/(supAcc[2]/abs(supAcc[2])*sqrt(pow(supAcc[2],2)+.01*pow(supAcc[0],2)))); //Approximation of signal angle in radians based on aerospace rotation sequence
+              rightThresh=round(180/PI*(atan(supAcc[1]/supAcc[2]))); //uncorrected aerospace
+  //            rightThresh=atan(supAcc[1]/sqrt(pow(supAcc[0],2)+pow(supAcc[2],2)));
+              t_right_thresh.setValue(str(rightThresh));
+              println(rightThresh);
+            }
           }
           j=j+1;
         } else if (mode==4) {
@@ -806,7 +860,7 @@ public void controlEvent(ControlEvent theEvent)
 public void emulator_on(int theValue)
 {
   emulator_on_toggle = !emulator_on_toggle;
-  println(emulator_on_toggle);
+  //println(emulator_on_toggle);
   cp5.controller("emulator_on").setCaptionLabel((emulator_on_toggle == true) ? "ON":"OFF");
   //println("on ?:" + emulator_on_toggle);
   if (emulator_on_toggle)  {
@@ -831,8 +885,12 @@ public void emulator_on(int theValue)
 /* Function controlmode */
 public void controlmode(int theValue)
 {
+  if (emulator_on_toggle) { //If emulator is currently on, turn it off and change the label
+    emulator_on_toggle = !emulator_on_toggle;
+    cp5.controller("emulator_on").setCaptionLabel((emulator_on_toggle == true) ? "ON":"OFF");
+  }
   controlmode_toggle = !controlmode_toggle;
-  cp5.controller("controlmode").setCaptionLabel((controlmode_toggle==true) ? "FOREARM":"WRIST");
+  cp5.controller("controlmode").setCaptionLabel((controlmode_toggle==false) ? "WRIST":"FOREARM");
 }
 
 
@@ -859,34 +917,64 @@ public void manual_right_thresh(float theValue)
 /* Function collect_left */
 public void collect_left(int theValue)
 {
+  if (emulator_on_toggle) { //If emulator is currently on, turn it off and change the label
+    emulator_on_toggle = !emulator_on_toggle;
+    cp5.controller("emulator_on").setCaptionLabel((emulator_on_toggle == true) ? "ON":"OFF");
+  }
   mode=2;
   j=0; //starts j over to be incremented with each iteration of serialEvent()
-  port.write("adcaccel 10 100");
-  port.bufferUntil('\n'); 
-  port.write("\n");
-  println("Pronation Samples (y):");
+  if (!controlmode_toggle) {
+    port.write("adcsam pot 5");
+    port.bufferUntil('\n');
+    port.write("\n");
+  } else {
+    port.write("adcaccel 10 100");
+    port.bufferUntil('\n'); 
+    port.write("\n");
+    println("Pronation Samples (y):");
+  }
 }
 
 /* Function collect_right */
 public void collect_right(int theValue)
 {
+  if (emulator_on_toggle) { //If emulator is currently on, turn it off and change the label
+    emulator_on_toggle = !emulator_on_toggle;
+    cp5.controller("emulator_on").setCaptionLabel((emulator_on_toggle == true) ? "ON":"OFF");
+  }
   mode=3; //
   j=0; //starts j over to be incremented with each iteration of serialEvent()
-  port.write("adcaccel 10 100");
-  port.bufferUntil('\n'); 
-  port.write("\n");
-  println("Supination Samples (y):");
+  if (!controlmode_toggle) {
+    port.write("adcsam pot 5");
+    port.bufferUntil('\n');
+    port.write("\n");
+  } else {
+    port.write("adcaccel 10 100");
+    port.bufferUntil('\n'); 
+    port.write("\n");
+    println("Supination Samples (y):");
+  }
 }
 
 /* Function collect_neutral */
 public void collect_neutral(int theValue)
 {
+  if (emulator_on_toggle) { //If emulator is currently on, turn it off and change the label
+    emulator_on_toggle = !emulator_on_toggle;
+    cp5.controller("emulator_on").setCaptionLabel((emulator_on_toggle == true) ? "ON":"OFF");
+  }
   mode=1; //
   j=0; //starts j over to be incremented with each iteration of serialEvent()
-  port.write("adcaccel 10 100");
-  port.bufferUntil('\n'); 
-  port.write("\n");
-  println("Neutral Samples (y):");
+    if (!controlmode_toggle) {
+    port.write("adcsam pot 5");
+    port.bufferUntil('\n');
+    port.write("\n");
+  } else {
+    port.write("adcaccel 10 100");
+    port.bufferUntil('\n'); 
+    port.write("\n");
+    println("Neutral Samples (y):");
+  }
 }
 
 
