@@ -108,8 +108,11 @@ controlP5.Textfield t_in_x_max;
 // these variables will all get toggled when they are called to update the button text...
 // so fill them with the opposite of the desired value
 boolean emulator_on_toggle = true;        // 0 = off, 1 = on
+<<<<<<< HEAD
 boolean controlmode_toggle = false; //0 = wrist, 1 = forearm
 =======
+=======
+>>>>>>> parent of 4730203... Forearm and Wrist modes working
 boolean controlmode_toggle = true; //0 = wrist, 1 = forearm
 //boolean direction_invert_toggle = true;   // 0 = regular, 1 = inverted
 //boolean comm_type_toggle = false;         // 0 = RC, 1 = dongle
@@ -536,6 +539,7 @@ void draw() {
 }
     
 
+<<<<<<< HEAD
 void collectDynamic() { //This function is called when the emulator is turned on
   if (!controlmode_toggle) {//if we are in wrist mode
     float pot1 = 0;
@@ -548,6 +552,8 @@ void collectDynamic() { //This function is called when the emulator is turned on
     if (signal < leftThresh) { //may need OR statement to address the fact the pronation past 90degrees should still count.  yAcc<0 excludes actual supination
       //println("flexed");
 
+=======
+>>>>>>> parent of 4730203... Forearm and Wrist modes working
 void collectDynamic() {
   float x1 = 0;
   float y1 = 0;
@@ -601,6 +607,7 @@ supRoll = float(t_right_thresh.getText());
       //fill(255,228,225);
       rxheading[1] = 0; // CURRENTLY CORRESPONDS TO LEFT HEADER
     }
+<<<<<<< HEAD
   
   } else { //if we are in forearm mode
       
@@ -648,6 +655,12 @@ supRoll = float(t_right_thresh.getText());
 
 void serialEvent (Serial myPort) { //called automatically whenever data from serial port is available
   
+=======
+
+}
+
+void serialEvent (Serial myPort) {
+>>>>>>> parent of 4730203... Forearm and Wrist modes working
   // Read string until carriage return and save as accelString
   String accelString = myPort.readStringUntil('\n'); //defines accelString as a single line of output from the terminal
 //Parsing
@@ -683,6 +696,7 @@ void serialEvent (Serial myPort) { //called automatically whenever data from ser
           }
           j=j+1;
         } else if (mode==2) {
+<<<<<<< HEAD
           if (!controlmode_toggle) {
             leftThresh=round((pot_vals.get(i-1)*0.089433+29.72776)-180);
             println(leftThresh);
@@ -717,6 +731,35 @@ void serialEvent (Serial myPort) { //called automatically whenever data from ser
               println(rightThresh);
             }
 
+=======
+          proSamplesX[j]=x_vals.get(i-1);
+          proSamplesY[j]=y_vals.get(i-1);
+          proSamplesZ[j]=z_vals.get(i-1);
+          if (j==9) { //if all 10 samples have been collected
+            float[] proAvg={Descriptive.mean(proSamplesX), Descriptive.mean(proSamplesY), Descriptive.mean(proSamplesZ)};
+            float[] proAcc={(proAvg[0]-xZero)*Scale, (proAvg[1]-yZero)*Scale, (proAvg[2]-zZero)*Scale};
+//            proRoll=atan(proAcc[1]/(proAcc[2]/abs(proAcc[2])*sqrt(pow(proAcc[2],2)+.01*pow(proAcc[0],2)))); //Approximation of roll angle in radians based on corrected aerospace rotation sequence
+            proRoll=round(180/PI*(atan(proAcc[1]/proAcc[2]))); //uncorrected aerospace rotation sequence
+//            proRoll=atan(proAcc[1]/sqrt(pow(proAcc[0],2)+pow(proAcc[2],2)));
+            t_left_thresh.setValue(str(proRoll));
+            println(proRoll);
+          }
+          j=j+1;
+        } else if (mode==3) {
+          supSamplesX[j]=x_vals.get(i-1);
+          supSamplesY[j]=y_vals.get(i-1);
+          supSamplesZ[j]=z_vals.get(i-1);
+          if (j==9) { //if all 10 samples have been collected
+            float[] supAvg={Descriptive.mean(supSamplesX), Descriptive.mean(supSamplesY), Descriptive.mean(supSamplesZ)};
+            float[] supAcc={(supAvg[0]-xZero)*Scale, (supAvg[1]-yZero)*Scale, (supAvg[2]-zZero)*Scale};
+//            supRoll=atan(supAcc[1]/(supAcc[2]/abs(supAcc[2])*sqrt(pow(supAcc[2],2)+.01*pow(supAcc[0],2)))); //Approximation of roll angle in radians based on aerospace rotation sequence
+            supRoll=round(180/PI*(atan(supAcc[1]/supAcc[2]))); //uncorrected aerospace
+//            supRoll=atan(supAcc[1]/sqrt(pow(supAcc[0],2)+pow(supAcc[2],2)));
+            t_right_thresh.setValue(str(supRoll));
+            println(supRoll);
+          }
+          j=j+1;
+>>>>>>> parent of 4730203... Forearm and Wrist modes working
         } else if (mode==4) {
           collectDynamic();
         }
@@ -807,12 +850,17 @@ public void emulator_on(int theValue)
 /* Function controlmode */
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 public void controlmode(int theValue) {
   if (emulator_on_toggle) { //If emulator is currently on, turn it off and change the label
     emulator_on_toggle = !emulator_on_toggle;
     mode=5; //stops collectDynamic()
     cp5.controller("emulator_on").setCaptionLabel((emulator_on_toggle == true) ? "ON":"OFF");
   }
+=======
+public void controlmode(int theValue)
+{
+>>>>>>> parent of 4730203... Forearm and Wrist modes working
   controlmode_toggle = !controlmode_toggle;
   cp5.controller("controlmode").setCaptionLabel((controlmode_toggle==true) ? "FOREARM":"WRIST");
 }
@@ -830,6 +878,7 @@ public void manual_right_thresh(float theValue)
 }
 
 /* Function collect_left */
+<<<<<<< HEAD
 public void collect_left(int theValue) {
 
   if (emulator_on_toggle) { //If emulator is currently on, turn it off and change the label
@@ -837,6 +886,10 @@ public void collect_left(int theValue) {
     cp5.controller("emulator_on").setCaptionLabel((emulator_on_toggle == true) ? "ON":"OFF");
     mode=5;
   }
+=======
+public void collect_left(int theValue)
+{
+>>>>>>> parent of 4730203... Forearm and Wrist modes working
   mode=2;
   j=0; //starts j over to be incremented with each iteration of serialEvent()
   port.write("adcaccel 10 100");
@@ -846,12 +899,17 @@ public void collect_left(int theValue) {
 }
 
 /* Function collect_right */
+<<<<<<< HEAD
 public void collect_right(int theValue) {
   if (emulator_on_toggle) { //If emulator is currently on, turn it off and change the label
     emulator_on_toggle = !emulator_on_toggle;
     cp5.controller("emulator_on").setCaptionLabel((emulator_on_toggle == true) ? "ON":"OFF");
     mode=5;
   }
+=======
+public void collect_right(int theValue)
+{
+>>>>>>> parent of 4730203... Forearm and Wrist modes working
   mode=3; //
   j=0; //starts j over to be incremented with each iteration of serialEvent()
   port.write("adcaccel 10 100");
@@ -861,6 +919,7 @@ public void collect_right(int theValue) {
 }
 
 /* Function collect_neutral */
+<<<<<<< HEAD
 public void collect_neutral(int theValue) {
 
   if (emulator_on_toggle) { //If emulator is currently on, turn it off and change the label
@@ -869,6 +928,10 @@ public void collect_neutral(int theValue) {
     mode=5;
   }
 
+=======
+public void collect_neutral(int theValue)
+{
+>>>>>>> parent of 4730203... Forearm and Wrist modes working
   mode=1; //
   j=0; //starts j over to be incremented with each iteration of serialEvent()
   port.write("adcaccel 10 100");
