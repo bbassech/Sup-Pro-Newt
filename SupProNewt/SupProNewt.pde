@@ -14,6 +14,11 @@ int r,g,b;    // Used to color background
 Serial port;  // The serial port object
 Robot robot; //Create object from Robot class
 
+int myColor = color(244,243,103);
+int c1, c2;
+float n, n1;
+int guiScale = 3; //adjusts size of GUI for different resolution screens
+
 int i = 0;  //This is an incrementing counter that increments everytime something is read from serialEvent
 int mode = 0; //This variable is changed when keys are pressed and used by serialEvent() to check what to do with incoming data
 int j = 0; //This is an incrementer used for populated arrays with a fixed number of samples (neutralY, leftSamplesY, etc)
@@ -54,20 +59,16 @@ int x = 0;     // Mouse pointer position
 int y = 0;     // Mouse pointer position
 int new_x = 0; // New mouse pointer position
 int new_y = 0; // New mouse pointer position
+int increment = 4*guiScale; // pixel increment to move mouse position by
 int old_rxheading = 0;  // Previous rxheading value...
 
 int x_window_limit = 1;
 int y_window_limit = 0;
 
-int myColor = color(244,243,103);
-int c1, c2;
-float n, n1;
-int guiScale = 3; //adjusts size of GUI for different resolution screens
 
 // GUI
 ControlP5 cp5;
 DropdownList ddl_ports;             // available serial ports as a DropdownList
-//controlP5.Button b_comm_type;
 controlP5.Button b_emulator_on;
 controlP5.Button b_controlmode; //Button for switching control mode
 controlP5.Button b_keyboard_mouse;
@@ -86,7 +87,6 @@ controlP5.Textlabel t_desc_thresholds; //Text label for thresholds section
 controlP5.Textlabel t_desc_left_thresh; //Text label for left thresh
 controlP5.Textlabel t_desc_right_thresh; //Text label for right thresh
 controlP5.Textlabel t_desc_neutral; //Text label for neutral
-//controlP5.Textlabel t_desc_comm_type;
 controlP5.Textlabel t_desc_emulator_type; //Mouse or Keyboard
 
 controlP5.Textlabel thresholds;
@@ -105,15 +105,11 @@ controlP5.Textfield t_neutral;
 controlP5.Textfield t_in_x_min;
 controlP5.Textfield t_in_x_max;
 
-//controlP5.Textlabel t_desc_sensitivity;
-//controlP5.Textlabel t_desc_speed;
 
 // these variables will all get toggled when they are called to update the button text...
 // so fill them with the opposite of the desired value
 boolean emulator_on_toggle = true;        // 0 = off, 1 = on
 boolean controlmode_toggle = false; //0 = wrist, 1 = forearm
-//boolean direction_invert_toggle = true;   // 0 = regular, 1 = inverted
-//boolean comm_type_toggle = false;         // 0 = RC, 1 = dongle
 boolean keyboard_mouse_toggle = true;     // 0 = mouse, 1 = keyboard
 int mouse_speed = 6;                      // fraction of display; movement per heading
 
@@ -135,7 +131,6 @@ void setup() {
   frameCount = 1; //enable use of delay()
 
   size(400*guiScale,500*guiScale);
-  //frameRate(30);  // how often draw() gets called...
   
   // -------------------
   // GUI
@@ -194,49 +189,58 @@ void setup() {
     t_desc_neutral = cp5.addTextlabel("t_desc_neutral","",20*guiScale, 260*guiScale);
   
   // Text input for thresholds
-  t_left_thresh = cp5.addTextfield("  ")
+  t_left_thresh = cp5.addTextfield("left_thresh")
     .setValue(-45)
     .setPosition(240*guiScale, 200*guiScale)
-    .setSize(60*guiScale, 20*guiScale);
-  t_left_thresh.setInputFilter(ControlP5.INTEGER);  
-  t_right_thresh = cp5.addTextfield("   ")
+    .setSize(30*guiScale, 20*guiScale);
+    t_left_thresh.captionLabel().setVisible(false);
+  t_right_thresh = cp5.addTextfield("right_thresh")
     .setValue(45)
     .setPosition(240*guiScale, 230*guiScale)
-    .setSize(60*guiScale, 20*guiScale);
-  t_right_thresh.setInputFilter(ControlP5.INTEGER); 
-  t_neutral = cp5.addTextfield("    ")
+    .setSize(30*guiScale, 20*guiScale);
+    t_right_thresh.captionLabel().setVisible(false);
+  t_neutral = cp5.addTextfield("neutral")
     .setValue(0)
     .setPosition(240*guiScale, 260*guiScale)
-    .setSize(60*guiScale,20*guiScale);
-  t_neutral.setInputFilter(ControlP5.INTEGER);
+    .setSize(30*guiScale,20*guiScale);
+    t_neutral.captionLabel().setVisible(false);
   
   // Button collection for thresholds  
   b_collect_left = cp5.addButton("collect_left")
     .setValue(0)
-    .setPosition(360*guiScale, 200*guiScale)
-    .setSize(20*guiScale, 20*guiScale)
-    .setId(0);
+    .setPosition(280*guiScale, 200*guiScale)
+    .setSize(64*guiScale, 20*guiScale)
+    .setColorBackground(#FFFFFF)
+    .setId(0)
+    .setLabel("Capture")
+    .setLabelVisible(true);
+    b_collect_left.getCaptionLabel()
+      .setColorBackground(#E36559)
+      .align(CENTER,CENTER);
   b_collect_right = cp5.addButton("collect_right")
     .setValue(0)
-    .setPosition(360*guiScale, 230*guiScale)
-    .setSize(20*guiScale, 20*guiScale)
-    .setId(0);
+    .setPosition(280*guiScale, 230*guiScale)
+    .setSize(64*guiScale, 20*guiScale)
+    .setColorBackground(#FFFFFF)
+    .setId(0)
+    .setLabel("Capture")
+    .setLabelVisible(true);
+    b_collect_right.getCaptionLabel()
+      .setColorBackground(#E36559)
+      .align(CENTER,CENTER);
   b_collect_neutral = cp5.addButton("collect_neutral")
     .setValue(0)
-    .setPosition(360*guiScale, 260*guiScale)
-    .setSize(20*guiScale,20*guiScale)
-    .setId(0);
-
-  // Text label for communication type
-//  t_desc_comm_type = cp5.addTextlabel("desc_comm_type", "", 10, 180); // 10, 140
-  
-  // Button to toggle between communication type - rc or toy
-//  b_comm_type = cp5.addButton("comm_type")
-//    .setValue(0)
-//    .setPosition(240, 172) // 240, 112
-//    .setSize(100, 30)
-//    .setId(4);
-  
+    .setPosition(280*guiScale, 260*guiScale)
+    .setSize(64*guiScale,20*guiScale)
+    .setColorBackground(#FFFFFF)
+    .setId(0)
+    .setLabel("Capture")
+    .setLabelVisible(true);
+    b_collect_neutral.getCaptionLabel()
+      .setColorBackground(#E36559)
+      .align(CENTER,CENTER);
+      
+   
   // Text label for emulator type
   t_desc_emulator_type = cp5.addTextlabel("desc_emulator_type", "", 10*guiScale, 360*guiScale); // 10, 180
   
@@ -274,31 +278,6 @@ void setup() {
   t_in_x_max.setInputFilter(ControlP5.INTEGER);
   
   
-  // Text label for mouse sensitivity/ response speed
-//  t_desc_sensitivity = cp5.addTextlabel("desc_sensitivity","", 10, 420); // 10, 220
-  
-  // Slider to toggle mouse responsiveness
-//  cp5.addSlider("controller_sensitivity")
-//    .setMin(0)
-//    .setMax(10)
-//    .setValue(controller_sensitivity_value)
-//    .setSize(140*guiScale, 30*guiScale)
-//    .setPosition(240*guiScale, 412*guiScale) // 240, 212
-//    .setNumberOfTickMarks(11);
-    
-  // Text label for speed
-//  t_desc_speed = cp5.addTextlabel("desc_speed","", 10, 460); // 10, 220
-  
-  // Slider to toggle mouse responsiveness
-//  cp5.addSlider("controller_speed")
-//    .setMin(0)
-//    .setMax(10)
-//    .setValue(controller_speed_value)
-//    .setSize(140*guiScale, 30*guiScale)
-//    .setPosition(240*guiScale, 452*guiScale) // 240, 212
-//    .setNumberOfTickMarks(11);   
-
-
   // --- this must be down here...
   
   // Text label for status of port  
@@ -327,9 +306,6 @@ void setup() {
   t_heading_status.setColorValue(0xFF0303);
   t_heading_status.setValue("Controller heading status: ");
   
-//  t_desc_comm_type.setColorValue(0xFF0303);
-//  t_desc_comm_type.setValue("Toggle communication (not being used)");
-  
   t_desc_emulator_on.setColorValue(0xFF0303);
   t_desc_emulator_on.setValue("Toggle emulator ON/OFF");
   
@@ -350,8 +326,6 @@ void setup() {
   t_left_thresh.setValue("-45"); //Initiates thresholds to display 45 and -45
   t_right_thresh.setValue("45");
   t_neutral.setValue("0"); //Initiates neutral to display 0
-  
-  
   
   t_desc_emulator_type.setColorValue(0xFF0303);
   t_desc_emulator_type.setValue("Toggle emulator Keyboard/Mouse");
@@ -378,38 +352,12 @@ void setup() {
   
   t_in_x_max.setValue("" + displayWidth);
   
-//  t_desc_sensitivity.setColorValue(0xFF0303);
-//  t_desc_sensitivity.setValue("Sensitivity (not implemented)");
-//  
-//  t_desc_speed.setColorValue(0xFF0303);
-//  t_desc_speed.setValue("Speed (not implemented)");
-   
-  //b_emulator_on.captionLabel()
-  //  .setText("ON");
-  
   cp5.getController("emulator_on")
     .getCaptionLabel();
     
   cp5.getController("controlmode")
     .getCaptionLabel();
-  
-  cp5.getController("collect_left")
-    .getCaptionLabel();
-  cp5.getController("collect_right")
-    .getCaptionLabel();
-  cp5.getController("collect_neutral")
-    .getCaptionLabel();
-    
-    
-  //b_comm_type.captionLabel()
-  //  .setText("Dongle");
-  
-//  cp5.getController("comm_type")
-//    .getCaptionLabel();
-  
-  //b_keyboard_mouse.captionLabel()
-  //  .setText("Keyboard");
-
+   
   cp5.getController("keyboard_mouse")
     .getCaptionLabel();
   
@@ -427,14 +375,8 @@ void setup() {
     .getCaptionLabel();
   b_heading_right.captionLabel()
     .setText("");
-  
-  /*
-  cp5.getController("dropdownlist_ports")
-    //.getCaptionLabel();
-    .setFont(font)
-    .toUpperCase(false);
-   */
-     
+
+ 
   // -------------------
   
   // DEBUG
@@ -516,7 +458,7 @@ void draw() {
       x = (int) b.getX();
       y = (int) b.getY();
 
-      /*
+      /*  OLD WAY OF EMULATING MOUSE
       // Move the x-coordinate of the mouse baed on the controller
       new_x = x + (heading * mouse_speed * (displayWidth / 100));
       if (new_x < x_window_limit) {
@@ -526,7 +468,7 @@ void draw() {
       }
       */                 
       
-      // Move the x-coordinate of the mouse 0-99
+      // Move the x-coordinate of the mouse by increments of "increment"
       if (rxheading[0] >= 0) {
         //println(rxheading);
         //if (abs(rxheading[0] - old_rxheading) > controller_sensitivity_value) {
@@ -590,46 +532,13 @@ void draw() {
   
 }
     
-//void mouseReleased() {
-//delay(1000); //This one second delay is to allow the mode to change in response to GUI button presses
-//  if (mode==1) {
-//    j=0; //starts j over to be incremented with each iteration of serialEvent()
-//    port.write("adcaccel 10 100");
-//    port.bufferUntil('\n'); 
-//    port.write("\n");
-//    println("Neutral Samples (y):");
-//  } else if (mode==2) {
-//    j=0; //starts j over to be incremented with each iteration of serialEvent()
-//    port.write("adcaccel 10 100");
-//    port.bufferUntil('\n'); 
-//    port.write("\n");
-//    println("Pronation Samples (y):");
-//  } else if (mode==3) {
-//    j=0; //starts j over to be incremented with each iteration of serialEvent()
-//    port.write("adcaccel 10 100");
-//    port.bufferUntil('\n'); 
-//    port.write("\n");
-//    println("Supination Samples (y):");
-//  } else if (mode==4) { //Starts "continuous" collection of acceleration data
-//    j=0;
-//    port.write("adcplay"); //Tells controller to collect data continuously
-//    port.bufferUntil('\n');
-//    port.write("\n");
-//  } else if (mode==5) {
-//    j=0; //starts j over to be incremented with each iteration of serialEvent()
-//    port.write("stop");
-//    port.bufferUntil('\n'); 
-//    port.write("\n");
-//  }
-//  mode=0; //Resets the mode to zero so that extraneous mouse clicks don't cause cause port writes
-//}
 
-void collectDynamic() {
+void collectDynamic() { //This function is called when the emulator is turned on
   if (!controlmode_toggle) {//if we are in wrist mode
     float pot1 = 0;
-    
-    leftThresh = float(t_left_thresh.getText()); //CONSIDER CHANGING leftThresh to leftRoll
-    rightThresh = float(t_right_thresh.getText());
+    leftThresh = int(t_left_thresh.getText()); //CONSIDER CHANGING leftThresh to leftRoll
+    rightThresh = int(t_right_thresh.getText());
+    println(leftThresh);
     pot1=pot_vals.get(i-1);
     signal = (pot1*0.089433+29.72776)-180; //calculates flexion/extension angle
     println(signal);
@@ -670,42 +579,28 @@ void collectDynamic() {
           zAcc=(z1-zZero)*Scale; //Converts voltage to acceleration in g's
       
       //Calculation of signal and pitch angle (4 options using    
-      //  //Aerospace rotation sequence
+        //Aerospace rotation sequence
           signal=180/PI*(atan(yAcc/zAcc)); //Approximation of signal angle in radians based on aerospace rotation sequence
           pitch=180/PI*(atan(-xAcc/sqrt(pow(yAcc,2)+pow(zAcc,2))));
-      //  //Aerospace rotation sequence (corrected)
-      //    signal=atan(yAcc/(zAcc/abs(zAcc)*sqrt(pow(zAcc,2)+.01*pow(xAcc,2)))); //Approximation of signal angle in radians based on aerospace rotation sequence
-      //    pitch=atan(-xAcc/sqrt(pow(yAcc,2)+pow(zAcc,2))); //Approximation of signal angle in radians
-      //  //Non-Aerospace rotation sequence    
-      //    signal=atan(yAcc/sqrt(pow(xAcc,2)+pow(zAcc,2))); //Approximation of signal angle in radians based on aerospace rotation sequence
-      //    pitch=atan(-xAcc/zAcc); 
-      //  //Non-Aerospace rotation sequence (corrected)
-      //    pitch=atan(-xAcc/(zAcc/abs(zAcc)*sqrt(pow(zAcc,2)+.01*pow(yAcc,2)))); //Approximation of signal angle in radians based on aerospace rotation sequence
-      //    signal=atan(yAcc/sqrt(pow(xAcc,2)+pow(zAcc,2))); //Approximation of signal angle in radians
-          
-      //println(pitch); //prints pitch angle in degrees
-      //println(signal); //prints signal (supination/pronation or flexion/extensionsignal) angle in degrees
+          //println(pitch); //prints pitch angle in degrees
+          //println(signal); //prints signal (supination/pronation or flexion/extensionsignal) angle in degrees
   
   
   //Check current signal angle against thresholds
       if ((signal < leftThresh || signal>rightThresh) && yAcc<0) { //This OR statement is simply to adress the fact the pronation past 90degrees should still count.  yAcc<0 excludes actual supination
         //println("Pronated");
-        //fill(255,0,0);
         rxheading[1] = 6; // CURRENTLY CORRESPONDS to RIGHT HEADER
       } else if (signal > rightThresh && zAcc>0) {
         //println("Supinated");
-        //fill(0,0,255);
         rxheading[1] = 3; // CURRENTLY CORRESPONDS TO LEFT HEADER
       } else {
         //println("neutral");
-        //fill(255,228,225);
         rxheading[1] = 0; // CURRENTLY CORRESPONDS TO LEFT HEADER
       }
   }
 }
 
-void serialEvent (Serial myPort) {
-  
+void serialEvent (Serial myPort) { //called automatically whenever data from serial port is available
   
   // Read string until carriage return and save as accelString
   String accelString = myPort.readStringUntil('\n'); //defines accelString as a single line of output from the terminal
@@ -767,9 +662,7 @@ void serialEvent (Serial myPort) {
             if (j==9) { //if all 10 samples have been collected
               float[] proAvg={Descriptive.mean(leftSamplesX), Descriptive.mean(leftSamplesY), Descriptive.mean(leftSamplesZ)};
               float[] proAcc={(proAvg[0]-xZero)*Scale, (proAvg[1]-yZero)*Scale, (proAvg[2]-zZero)*Scale};
-  //            leftThresh=atan(proAcc[1]/(proAcc[2]/abs(proAcc[2])*sqrt(pow(proAcc[2],2)+.01*pow(proAcc[0],2)))); //Approximation of signal angle in radians based on corrected aerospace rotation sequence
               leftThresh=round(180/PI*(atan(proAcc[1]/proAcc[2]))); //uncorrected aerospace rotation sequence
-  //            leftThresh=atan(proAcc[1]/sqrt(pow(proAcc[0],2)+pow(proAcc[2],2)));
               t_left_thresh.setValue(str(leftThresh));
               println(leftThresh);
             }
@@ -787,9 +680,7 @@ void serialEvent (Serial myPort) {
             if (j==9) { //if all 10 samples have been collected
               float[] supAvg={Descriptive.mean(rightSamplesX), Descriptive.mean(rightSamplesY), Descriptive.mean(rightSamplesZ)};
               float[] supAcc={(supAvg[0]-xZero)*Scale, (supAvg[1]-yZero)*Scale, (supAvg[2]-zZero)*Scale};
-  //            rightThresh=atan(supAcc[1]/(supAcc[2]/abs(supAcc[2])*sqrt(pow(supAcc[2],2)+.01*pow(supAcc[0],2)))); //Approximation of signal angle in radians based on aerospace rotation sequence
               rightThresh=round(180/PI*(atan(supAcc[1]/supAcc[2]))); //uncorrected aerospace
-  //            rightThresh=atan(supAcc[1]/sqrt(pow(supAcc[0],2)+pow(supAcc[2],2)));
               t_right_thresh.setValue(str(rightThresh));
               println(rightThresh);
             }
@@ -864,14 +755,15 @@ public void emulator_on(int theValue)
   cp5.controller("emulator_on").setCaptionLabel((emulator_on_toggle == true) ? "ON":"OFF");
   //println("on ?:" + emulator_on_toggle);
   if (emulator_on_toggle)  {
-    // The emulator is turned ON, send a keystroke to the serial port in case data has paused...
-    port.write(13);
-    mode=4;
-    j=0;
-    port.write("adcplay"); //Tells controller to collect data continuously
-    port.bufferUntil('\n');
-    port.write("\n");
-    println("test");
+    // if the emulator is turned ON, send a keystroke to the serial port in case data has paused...
+//    port.write(13);
+//    mode=4;
+//    j=0;
+//    port.write("adcplay"); //Tells controller to collect data continuously
+//    port.bufferUntil('\n');
+//    port.write("\n");
+//    println("test");
+collectDynamic();
   }
   if (!emulator_on_toggle) {
     mode=5; //stops collectDynamic()
@@ -883,24 +775,15 @@ public void emulator_on(int theValue)
 }
 
 /* Function controlmode */
-public void controlmode(int theValue)
-{
+public void controlmode(int theValue) {
   if (emulator_on_toggle) { //If emulator is currently on, turn it off and change the label
     emulator_on_toggle = !emulator_on_toggle;
+    mode=5; //stops collectDynamic()
     cp5.controller("emulator_on").setCaptionLabel((emulator_on_toggle == true) ? "ON":"OFF");
   }
   controlmode_toggle = !controlmode_toggle;
   cp5.controller("controlmode").setCaptionLabel((controlmode_toggle==false) ? "WRIST":"FOREARM");
 }
-
-
-///* Function comm_type */
-//public void comm_type(int theValue)
-//{
-//  comm_type_toggle = !comm_type_toggle;
-//  cp5.controller("comm_type").setCaptionLabel((comm_type_toggle == true) ? "DONGLE":"RC TOY");
-//  //println("dongle ?:" + comm_type_toggle);
-//}
 
 /* Function manual_left_thresh */
 public void manual_left_thresh(float theValue)
@@ -920,6 +803,7 @@ public void collect_left(int theValue)
   if (emulator_on_toggle) { //If emulator is currently on, turn it off and change the label
     emulator_on_toggle = !emulator_on_toggle;
     cp5.controller("emulator_on").setCaptionLabel((emulator_on_toggle == true) ? "ON":"OFF");
+    mode=5;
   }
   mode=2;
   j=0; //starts j over to be incremented with each iteration of serialEvent()
@@ -941,6 +825,7 @@ public void collect_right(int theValue)
   if (emulator_on_toggle) { //If emulator is currently on, turn it off and change the label
     emulator_on_toggle = !emulator_on_toggle;
     cp5.controller("emulator_on").setCaptionLabel((emulator_on_toggle == true) ? "ON":"OFF");
+    mode=5;
   }
   mode=3; //
   j=0; //starts j over to be incremented with each iteration of serialEvent()
@@ -962,6 +847,7 @@ public void collect_neutral(int theValue)
   if (emulator_on_toggle) { //If emulator is currently on, turn it off and change the label
     emulator_on_toggle = !emulator_on_toggle;
     cp5.controller("emulator_on").setCaptionLabel((emulator_on_toggle == true) ? "ON":"OFF");
+    mode=5;
   }
   mode=1; //
   j=0; //starts j over to be incremented with each iteration of serialEvent()
@@ -999,18 +885,6 @@ public void in_x_max(float theValue)
   //cp5.controller("in_x_max").setValue("" + theValue);
   t_in_x_max.setValue("" + theValue);
 }
-
-///* Function mouse sensitivity */
-//public void controller_sensitivity(float controller_sensitivity_value)
-//{
-//  controller_sensitivity_value = cp5.getController("controller_sensitivity").getValue();
-//}
-//
-//public void controller_speed(float controller_speed_value)
-//{
-//  controller_speed_value = cp5.getController("controller_speed").getValue();
-//}
-
 
 /* Setup the DropdownList */
 void customize_dropdownlist(DropdownList ddl)
