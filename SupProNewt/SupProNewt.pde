@@ -29,15 +29,16 @@ float yZero=2010; //center value of y channel
 float zZero=2050; // center value of z channel
 float Scale=1/300.0; //sensitivity (g/mV) of accelerometer
 
-float roll=0; //initialize variable for roll angle
+float signal=0; //initialize variable for signal angle
 float pitch=0; //initialize variable for pitch angle
-float neutralRoll=0; //variable for the roll angle of neutral postion
-float proRoll=0; //variable for the roll angle of pronation threshold
-float supRoll=0; //variable for the roll angle of supination threshold
+float neutralSignal=0; //variable for the angle of neutral postion
+float leftThresh=0; //variable for the angle of the left threshold
+float rightThresh=0; //variable for the angle of the right threshold
 int[] rxheading = {0, 0}; //Used for telling GUI and Emulator when threshold has been reached
 
 //Initialize float lists for all acceleration channels. Values will be appended 
 //to these lists everytime a non null string is written to the port
+FloatList pot_vals;
 FloatList x_vals;
 FloatList y_vals;
 FloatList z_vals;
@@ -46,12 +47,12 @@ FloatList z_vals;
 float[] neutralX = new float[10]; //used to collect 10 x values for neutral...
 float[] neutralY = new float[10];
 float[] neutralZ = new float[10];
-float[] proSamplesX = new float[10]; //Used to store 10 x values for pronation to average for a threshold
-float[] proSamplesY = new float[10]; //Used to store 10 y values for pronation to average for a threshold
-float[] proSamplesZ = new float[10]; //Used to store 10 z values for pronation to average for a threshold
-float[] supSamplesX = new float[10]; //Used to store 10 x values for supinaton to average for a threshold
-float[] supSamplesY = new float[10]; //Used to store 10 y values for supinaton to average for a threshold
-float[] supSamplesZ = new float[10]; //Used to store 10 y values for supinaton to average for a threshold
+float[] leftSamplesX = new float[10]; //Used to store 10 x values for left position to average for a threshold
+float[] leftSamplesY = new float[10]; //Used to store 10 y values for left position to average for a threshold
+float[] leftSamplesZ = new float[10]; //Used to store 10 z values for left position to average for a threshold
+float[] rightSamplesX = new float[10]; //Used to store 10 x values for right position to average for a threshold
+float[] rightSamplesY = new float[10]; //Used to store 10 y values for right position to average for a threshold
+float[] rightSamplesZ = new float[10]; //Used to store 10 y values for right position to average for a threshold
 
 // For Mouse control
 int x = 0;     // Mouse pointer position
@@ -108,11 +109,7 @@ controlP5.Textfield t_in_x_max;
 // these variables will all get toggled when they are called to update the button text...
 // so fill them with the opposite of the desired value
 boolean emulator_on_toggle = true;        // 0 = off, 1 = on
-
-boolean controlmode_toggle = true; //0 = wrist, 1 = forearm
-//boolean direction_invert_toggle = true;   // 0 = regular, 1 = inverted
-//boolean comm_type_toggle = false;         // 0 = RC, 1 = dongle
-
+boolean controlmode_toggle = false; //0 = wrist, 1 = forearm
 boolean keyboard_mouse_toggle = true;     // 0 = mouse, 1 = keyboard
 int mouse_speed = 6;                      // fraction of display; movement per heading
 
@@ -125,6 +122,7 @@ boolean port_selected = false;     // if a port has been chosen
 boolean port_setup = false;        // if a port has been set up
 
 void setup() {
+  pot_vals = new FloatList();
   x_vals = new FloatList();
   y_vals = new FloatList();
   z_vals = new FloatList();
@@ -604,40 +602,55 @@ void collectDynamic() { //This function is called when the emulator is turned on
 }
 
 void serialEvent (Serial myPort) { //called automatically whenever data from serial port is available
+  
   // Read string until carriage return and save as accelString
   String accelString = myPort.readStringUntil('\n'); //defines accelString as a single line of output from the terminal
+
 //Parsing
   if (accelString != null) {
     try {
       float[] accelVals = float(split(accelString, ',')); //splits line based on comma delimiter
 //      println(accelVals);
+//      println(mode);
+//      println(controlmode_toggle); 
       if (!Float.isNaN(accelVals[0])) { //If a value for the acceleration was output 
         if (mode==4) { //If we are using adcplay
+          pot_vals.append(accelVals[0]);
           x_vals.append(accelVals[1]);
           y_vals.append(accelVals[2]);
           z_vals.append(accelVals[3]);
+          println(pot_vals);
         } else {
-          x_vals.append(accelVals[0]);
-          y_vals.append(accelVals[1]);
-          z_vals.append(accelVals[2]);
+            if (!controlmode_toggle) {
+              pot_vals.append(accelVals[0]);
+            } else {
+                x_vals.append(accelVals[0]);
+                y_vals.append(accelVals[1]);
+                z_vals.append(accelVals[2]);
+              }
         }
           
         i = i + 1;   //Increments list index if actual acceleration values were appended
         if (mode==1) {
-          neutralX[j]=x_vals.get(i-1);
-          neutralY[j]=y_vals.get(i-1);
-          neutralZ[j]=z_vals.get(i-1);
-          if (j==9) { //if all 10 samples have been collected
-            float[] neutralAvg={Descriptive.mean(neutralX), Descriptive.mean(neutralY), Descriptive.mean(neutralZ)};
-            float[] neutralAcc={(neutralAvg[0]-xZero)*Scale, (neutralAvg[1]-yZero)*Scale, (neutralAvg[2]-zZero)*Scale};
-//            neutralRoll=atan(neutralAcc[1]/(neutralAcc[2]/abs(neutralAcc[2])*sqrt(pow(neutralAcc[2],2)+.01*pow(neutralAcc[0],2)))); //Approximation of roll angle in radians based on corrected aerospace rotation sequence
-            neutralRoll=round(180/PI*(atan(neutralAcc[1]/neutralAcc[2]))); //uncorrected aerospace 
-//            neutralRoll=atan(neutralAcc[1]/sqrt(pow(neutralAcc[0],2)+pow(neutralAcc[2],2))); //Approximation of roll angle in radians based on aerospace rotation sequence 
-            t_neutral.setValue(str(neutralRoll));
-            println(neutralRoll);
-            
+          if (!controlmode_toggle) {
+            neutralSignal=round((pot_vals.get(i-1)*0.089433+29.72776)-180);
+            println(neutralSignal);
+            t_neutral.setValue(str(neutralSignal));
+          } else {
+            neutralX[j]=x_vals.get(i-1);
+            neutralY[j]=y_vals.get(i-1);
+            neutralZ[j]=z_vals.get(i-1);
+            if (j==9) { //if all 10 samples have been collected
+              float[] neutralAvg={Descriptive.mean(neutralX), Descriptive.mean(neutralY), Descriptive.mean(neutralZ)};
+              float[] neutralAcc={(neutralAvg[0]-xZero)*Scale, (neutralAvg[1]-yZero)*Scale, (neutralAvg[2]-zZero)*Scale};
+  //            neutralSignal=atan(neutralAcc[1]/(neutralAcc[2]/abs(neutralAcc[2])*sqrt(pow(neutralAcc[2],2)+.01*pow(neutralAcc[0],2)))); //Approximation of signal angle in radians based on corrected aerospace rotation sequence
+              neutralSignal=round(180/PI*(atan(neutralAcc[1]/neutralAcc[2]))); //uncorrected aerospace 
+  //            neutralSignal=atan(neutralAcc[1]/sqrt(pow(neutralAcc[0],2)+pow(neutralAcc[2],2))); //Approximation of signal angle in radians based on aerospace rotation sequence 
+              t_neutral.setValue(str(neutralSignal));
+              println(neutralSignal);
+            } 
           }
-          j=j+1;
+            j=j+1;
         } else if (mode==2) {
           if (!controlmode_toggle) {
             leftThresh=round((pot_vals.get(i-1)*0.089433+29.72776)-180);
@@ -657,24 +670,25 @@ void serialEvent (Serial myPort) { //called automatically whenever data from ser
           }
           j=j+1;
         } else if (mode==3) {
-          if (!controlmode_toggle) {
-            rightThresh=round((pot_vals.get(i-1)*0.089433+29.72776)-180);
-            println(rightThresh);
-            t_right_thresh.setValue(str(rightThresh));
-          } else {
-            rightSamplesX[j]=x_vals.get(i-1);
-            rightSamplesY[j]=y_vals.get(i-1);
-            rightSamplesZ[j]=z_vals.get(i-1);
-            if (j==9) { //if all 10 samples have been collected
-              float[] supAvg={Descriptive.mean(rightSamplesX), Descriptive.mean(rightSamplesY), Descriptive.mean(rightSamplesZ)};
-              float[] supAcc={(supAvg[0]-xZero)*Scale, (supAvg[1]-yZero)*Scale, (supAvg[2]-zZero)*Scale};
-              rightThresh=round(180/PI*(atan(supAcc[1]/supAcc[2]))); //uncorrected aerospace
-              t_right_thresh.setValue(str(rightThresh));
+            if (!controlmode_toggle) {
+              rightThresh=round((pot_vals.get(i-1)*0.089433+29.72776)-180);
               println(rightThresh);
-            }
-
+              t_right_thresh.setValue(str(rightThresh));
+            } else {
+                rightSamplesX[j]=x_vals.get(i-1);
+                rightSamplesY[j]=y_vals.get(i-1);
+                rightSamplesZ[j]=z_vals.get(i-1);
+                if (j==9) { //if all 10 samples have been collected
+                  float[] supAvg={Descriptive.mean(rightSamplesX), Descriptive.mean(rightSamplesY), Descriptive.mean(rightSamplesZ)};
+                  float[] supAcc={(supAvg[0]-xZero)*Scale, (supAvg[1]-yZero)*Scale, (supAvg[2]-zZero)*Scale};
+                  rightThresh=round(180/PI*(atan(supAcc[1]/supAcc[2]))); //uncorrected aerospace
+                  t_right_thresh.setValue(str(rightThresh));
+                  println(rightThresh);
+                }
+              }
+              j=j+1;
         } else if (mode==4) {
-          collectDynamic();
+            collectDynamic();
         }
       }
       
